@@ -129,15 +129,15 @@ This repository is intended to strengthen practical knowledge of:
 * Backend architecture
 * RESTful application design
 * Full CRUD functionality
+* Email Service
+* OTP Service
+* 2FA Authentication
 
 ## Future Projects
 
 Planned additions include:
 
-* Blog Application
-* Expense Tracker
-* Notes Application
-* Library Management System
+* Anomaly Detection Agent
 * Flask Deployment Examples
 
 ## Developer
