@@ -1,0 +1,74 @@
+{% extends "user/base.html" %}
+
+{% block title %}Board{% endblock %}
+
+{% block page_title %}Board{% endblock %}
+{% block page_subtitle %}Drag-free view of every task by status{% endblock %}
+
+{% block content %}
+
+  <div class="board">
+
+    <div class="board-column">
+      <div class="board-column-header">
+        <span class="board-dot" style="background:#6B7280;"></span>
+        <h3>Not Started</h3>
+        <span class="board-count">{{ not_started_items|length }}</span>
+      </div>
+      <div class="board-column-body">
+        {% for item in not_started_items %}
+          <div class="board-card">
+            <div class="board-card-title">{{ item.title if item.title is defined else item.item_name }}</div>
+            {% if item.deadline %}
+              <div class="board-card-meta">Due {{ item.deadline.strftime('%b %d') if item.deadline.strftime is defined else item.deadline }}</div>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="board-empty">Nothing here</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="board-column">
+      <div class="board-column-header">
+        <span class="board-dot" style="background:#F59E0B;"></span>
+        <h3>In Progress</h3>
+        <span class="board-count">{{ in_progress_items|length }}</span>
+      </div>
+      <div class="board-column-body">
+        {% for item in in_progress_items %}
+          <div class="board-card">
+            <div class="board-card-title">{{ item.title if item.title is defined else item.item_name }}</div>
+            {% if item.deadline %}
+              <div class="board-card-meta">Due {{ item.deadline.strftime('%b %d') if item.deadline.strftime is defined else item.deadline }}</div>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="board-empty">Nothing here</div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="board-column">
+      <div class="board-column-header">
+        <span class="board-dot" style="background:#10B981;"></span>
+        <h3>Completed</h3>
+        <span class="board-count">{{ completed_items|length }}</span>
+      </div>
+      <div class="board-column-body">
+        {% for item in completed_items %}
+          <div class="board-card board-card-done">
+            <div class="board-card-title">{{ item.title if item.title is defined else item.item_name }}</div>
+            {% if item.deadline %}
+              <div class="board-card-meta">Due {{ item.deadline.strftime('%b %d') if item.deadline.strftime is defined else item.deadline }}</div>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="board-empty">Nothing here</div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+{% endblock %}

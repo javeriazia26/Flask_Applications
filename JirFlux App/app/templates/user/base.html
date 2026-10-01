@@ -1,1 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Dashboard{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
 
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">JF</div>
+      <div>
+        <div class="brand-name">JirFlux</div>
+        <div class="brand-sub">Workspace</div>
+      </div>
+    </div>
+
+    <nav>
+      <div class="nav-section-label">MENU</div>
+      <ul class="nav-list">
+        <li><a href="{{ url_for('dash.user_dash') }}" class="{{ 'active' if active_page == 'dashboard' else '' }}">Dashboard</a></li>
+        <li><a href="{{ url_for('dash.board') }}" class="{{ 'active' if active_page == 'board' else '' }}">Board</a></li>
+        <li><a href="#" class="{{ 'active' if active_page == 'calendar' else '' }}"> Calendar</a></li>
+        <li><a href="{{ url_for('project.project') }}" class="{{ 'active' if active_page == 'project' else '' }}"> Projects</a></li>
+        <li><a href="{{ url_for('team.team') }}" class="{{ 'active' if active_page == 'team' else '' }}">Team</a></li>
+      </ul>
+    </nav>
+
+    <nav>
+      <div class="nav-section-label">ACCOUNT</div>
+      <ul class="nav-list">
+        <li><a href="{{ url_for('notification.notifications') }}" class="{{ 'active' if active_page == 'notification' else '' }}">Notification</a></li>
+        <li><a href="{{ url_for('connection.connection_requests') }}" class="{{ 'active' if active_page == 'connection' else '' }}"> Network</a></li>
+        <li><a href="{{ url_for('settings.settings') }}" class="{{ 'active' if active_page == 'setting' else '' }}"> Setting</a></li>
+        <li><a href="{{ url_for('profile.profile') }}" class="{{ 'active' if active_page == 'profile' else '' }}"> Profile</a></li>
+      </ul>
+    </nav>
+
+    <nav>
+      <ul class="nav-list">
+        <li><a href="{{ url_for('auth.logout') }}" class="{{ 'active' if active_page == 'logout' else '' }}"><span class="nav-icon">&#10148;</span> Logout</a></li>
+      </ul>
+    </nav>
+
+    <div class="sidebar-footer">Signed in as {{ user.full_name or user.username if user is defined else "User" }}</div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="main">
+
+    <div class="topbar">
+      <div>
+        <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+        <div class="subtitle">{% block page_subtitle %}Welcome back, {{ user.full_name or user.username if user is defined else "there" }}
+          {% endblock %}
+        </div>
+      </div>
+      <div class="topbar-actions">
+        {% block topbar_actions %}{% endblock %}
+        {% if user.picture %}
+        <img class="profile-avatar" id="avatar-preview-view"
+                src="{{ url_for('static', filename=user.picture.replace('static/', '')) }}" alt="{{ user.username }}">
+        {% else %}
+        <div class="avatar">{{ ((user.full_name or user.username)[0] | upper) if user is defined and (user.full_name or user.username) else "U" }}</div>
+        {% endif %}
+      </div>
+    
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="margin-bottom: 20px;">
+          {% for category, message in messages %}
+            <div style="padding: 10px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; background: {{ '#FEE2E2' if category == 'error' else '#E7F9F1' }}; color: {{ '#B91C1C' if category == 'error' else '#065F46' }};">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+
+  </main>
+
+</body>
+</html>
