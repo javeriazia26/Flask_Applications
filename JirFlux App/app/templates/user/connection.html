@@ -1,0 +1,48 @@
+{% extends 'user/base.html' %}
+
+{% block title %}Connection Requests{% endblock %}
+{% block page_title %}Connection Requests{% endblock %}
+{% block page_subtitle %}People who want to connect with you{% endblock %}
+
+{% block content %}
+<div class="team-page">
+
+  <div class="team-stats">
+    <div class="stat-card">
+      <div class="stat-icon">&#128276;</div>
+      <div class="stat-value">{{ connections|length }}</div>
+      <div class="stat-label">Pending Requests</div>
+    </div>
+  </div>
+
+  <div class="team-list-wrap">
+    {% if connections %}
+      {% for connection in connections %}
+        <div class="team-row">
+          <div class="team-avatar av{{ loop.index0 % 6 }}">
+            {{ (connection.sender.full_name or connection.sender.username)[0] | upper }}
+          </div>
+
+          <div>
+            <div class="team-name">{{ connection.sender.full_name or connection.sender.username }}</div>
+            <div class="team-bio">wants to connect with you</div>
+          </div>
+
+          <div class="team-row-actions">
+            <form action="{{ url_for('connection.accept_connection_request', user_id=connection.sender_id) }}" method="POST">
+              <button class="btn-primary" type="submit">Accept</button>
+            </form>
+
+            <form action="{{ url_for('connection.reject_connection_request', user_id=connection.sender_id) }}" method="POST">
+              <button class="btn-secondary" type="submit">Reject</button>
+            </form>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="team-empty">No pending connection requests right now.</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
