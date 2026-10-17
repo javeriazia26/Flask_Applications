@@ -1,0 +1,126 @@
+{% extends "user/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Welcome back, {{ user.full_name or user.username if user is defined else "there" }}{% endblock %}
+
+{% block topbar_actions %}
+  <span class="team-invite-panel">
+      <form class="team-invite-form" action="{{ url_for('connection.send_connection_request_by_username') }}" method="POST">
+        <input class="form-input" type="text" name="username" placeholder="username" required maxlength="50" autocomplete="off">
+        <button class="btn-primary" type="submit">+ Add Member</button>
+      </form>
+  </span>
+{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% block content %}
+
+
+  <div class="stat-grid">
+    <div class="stat-card completed">
+      <div class="stat-icon">&#10003;</div>
+      <div class="stat-value">{{ completed_count }}</div>
+      <div class="stat-label">Completed</div>
+      <div class="stat-sub">{{ completion_rate }}% rate</div>
+    </div>
+
+    <div class="stat-card progress">
+      <div class="stat-icon">&#9889;</div>
+      <div class="stat-value">{{ in_progress_count }}</div>
+      <div class="stat-label">In Progress</div>
+      <div class="stat-sub">Active now</div>
+    </div>
+
+    <div class="stat-card not-started">
+      <div class="stat-icon">&#9675;</div>
+      <div class="stat-value">{{ not_started_count }}</div>
+      <div class="stat-label">Not Started</div>
+      <div class="stat-sub">Queued</div>
+    </div>
+
+    <div class="stat-card overdue">
+      <div class="stat-icon">&#9888;</div>
+      <div class="stat-value">{{ overdue_count }}</div>
+      <div class="stat-label">Overdue</div>
+      <div class="stat-sub">Need attention</div>
+    </div>
+  </div>
+
+  <div class="dash-row">
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Project Activity</h2>
+        <a href="#" class="panel-link">View all</a>
+      </div>
+
+      {% if item_logs %}
+        <ul class="activity-list">
+          {% for log in item_logs %}
+            {% set action = (log.action or "")|lower %}
+            <li class="activity-item">
+              <span class="activity-icon
+                {% if 'complet' in action %}completed
+                {% elif 'creat' in action %}created
+                {% elif 'delet' in action or 'remov' in action %}deleted
+                {% else %}updated{% endif %}">
+                {% if 'complet' in action %}&#10003;
+                {% elif 'creat' in action %}&#43;
+                {% elif 'delet' in action or 'remov' in action %}&#10005;
+                {% else %}&#9998;{% endif %}
+              </span>
+              <div>
+                <div class="activity-text">
+                  <b>{{ log.username }}</b> {{ log.action }}
+                  <span style="color:#94A3B8;">in {{ log.project }}</span>
+                </div>
+                <div class="activity-meta">
+                  {{ log.date.strftime('%b %d') }} &middot; {{ log.time.strftime('%I:%M %p') }}
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="empty-state">No activity yet on your projects.</div>
+      {% endif %}
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <h2>Calendar</h2>
+        <div class="cal-badges">
+          {% if due_today_count %}<span class="cal-pill due">{{ due_today_count }} due today</span>{% endif %}
+          {% if overdue_count %}<span class="cal-pill overdue">{{ overdue_count }} overdue</span>{% endif %}
+        </div>
+      </div>
+      <div id="mini-calendar" data-today="{{ today.isoformat() }}"></div>
+    </div>
+
+  </div>
+
+  <script>
+    (function () {
+      var root = document.getElementById('mini-calendar');
+      var today = new Date(root.dataset.today + 'T00:00:00');
+      var year = today.getFullYear(), month = today.getMonth();
+      var monthLabel = today.toLocaleString('default', { month: 'long', year: 'numeric' });
+      var firstDay = new Date(year, month, 1).getDay();
+      var daysInMonth = new Date(year, month + 1, 0).getDate();
+
+      var html = '<div class="cal-month">' + monthLabel + '</div><div class="cal-grid">';
+      ['S','M','T','W','T','F','S'].forEach(function (d) { html += '<div class="cal-dow">' + d + '</div>'; });
+      for (var i = 0; i < firstDay; i++) html += '<div></div>';
+      for (var d = 1; d <= daysInMonth; d++) {
+        var isToday = d === today.getDate();
+        html += '<div class="cal-day' + (isToday ? ' today' : '') + '">' + d + '</div>';
+      }
+      html += '</div>';
+      root.innerHTML = html;
+    })();
+  </script>
+
+{% endblock %}
