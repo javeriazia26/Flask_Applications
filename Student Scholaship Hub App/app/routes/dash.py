@@ -43,7 +43,7 @@ def user_dash():
         return redirect(url_for('auth.login'))
 
     user = Credential.query.filter_by(id=session['user_id']).first()
-   
+
     # get filter values from URL
     selected_campus = request.args.get('c_name')
     selected_dept   = request.args.get('d_name')
