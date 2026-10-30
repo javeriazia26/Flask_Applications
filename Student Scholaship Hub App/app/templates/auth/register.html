@@ -1,8 +1,8 @@
 {% extends "auth/base.html" %}
-{% block title %} Login {% endblock  %}
+{% block title %} Register {% endblock  %}
 {% block content %}
 <div class = "login-box">
-    <form method="post" action="{{url_for('auth.login')}}">
+    <form method="post" action="{{ url_for('auth.register') }}">
         {{form.hidden_tag()}}
 
         <div class = "form-group">
@@ -23,7 +23,8 @@
 
         <div class = "form-group">
             {{form.password.label}}
-            {{form.password(size = 20)}}
+            {{ form.password(class="form-control", type="password") }}
+            
             {% for error in form.password.errors %}
             <span> {{error}} </span>
             {% endfor %}            
@@ -31,7 +32,7 @@
         <p>
             {{ form.submit(class='btn') }}
         </p>
-        <p>Don't have an account? <a href = "{{ url_for('auth.login') }}"> Login here</a></p>
+        <p>Already have an account? <a href = "{{ url_for('auth.login') }}"> Login here</a></p>
     </form>
 </div>
 {% endblock %}

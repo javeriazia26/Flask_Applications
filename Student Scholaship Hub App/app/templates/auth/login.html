@@ -15,11 +15,12 @@
 
         <div class = "form-group">
             {{form.password.label}}
-            {{form.password(size = 20)}}
+            {{ form.password(class="form-control", type="password") }}
             {% for error in form.password.errors %}
             <span> {{error}} </span>
             {% endfor %}            
         </div>
+        <a href="{{ url_for('auth.forgot_password') }}">Forget Password?</a>
         <p>
             {{ form.submit(class='btn') }}
         </p>
