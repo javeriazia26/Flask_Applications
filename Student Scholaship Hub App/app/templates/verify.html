@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verify OTP</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/password_flow.css') }}">
+</head>
+<body>
+
+    <h1>Verify OTP</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <p>{{ message }}</p>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if not expired %}
+        <form method="POST">
+            <label for="otp">Enter OTP</label><br>
+            <input
+                type="text"
+                id="otp"
+                name="otp"
+                maxlength="6"
+                required
+            >
+            <button type="submit">Verify</button>
+        </form>
+    {% else %}
+        <p>Your OTP has expired.</p>
+
+        <form method="POST" action="{{ resend_url }}">
+            <button type="submit">Resend OTP</button>
+        </form>
+    {% endif %}
+
+</body>
+</html>
