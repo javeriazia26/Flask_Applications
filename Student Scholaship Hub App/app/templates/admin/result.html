@@ -24,7 +24,7 @@
             {% for st in students %}
                 <option value="{{ st.std_id }}"
                     {% if editing_result and editing_result.std_id == st.std_id %}selected{% endif %}>
-                    {{ st.std_id }}  {{ st.first_name }} {{ st.last_name }} 
+                    {{ st.std_id }}  ({{ st.first_name }} {{ st.last_name }}, {{st.semester}}) 
                 </option>
             {% endfor %}
         </select><br><br>
@@ -68,11 +68,14 @@
                 <td>{{ r.student.first_name }} {{ r.student.last_name }}</td>
                 <td>{{ r.semester }}</td>
                 <td>{{ r.cgpa }}</td>
-                <td>
-                    <a href="{{ url_for('result.result') }}?edit={{ r.r_id }}">Edit</a>
+                <td class="actions">
+                    <a href="{{ url_for('result.result') }}?edit={{ r.r_id }}" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i> </a>
 
                     <form method="POST" action="{{ url_for('result.delete_result', r_id=r.r_id) }}">
-                        <button type="submit">Delete</button>
+                        <button type="submit" title="Delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </form>
                 </td>
             </tr>

@@ -4,7 +4,7 @@
 
 {% block page_title %}
     <h1 class="page-heading">Dashboard</h1>
-    <p class="page-sub">Welcome back, Admin!</p>
+    <p class="page-sub">Welcome back, {{session['username']}}!</p>
 {% endblock %}
 
 {% block content %}
@@ -13,7 +13,9 @@
 <div class="stats-grid">
 
     <div class="stat-card">
-        <div class="stat-icon stat-icon-blue">&#128100;</div>
+        <div class="stat-icon stat-icon-blue">
+            <i class="fa-solid fa-user-graduate"></i>
+        </div>
         <div class="stat-info">
             <div class="stat-value">{{ all_students }}</div>
             <div class="stat-label">Students</div>
@@ -21,7 +23,9 @@
     </div>
 
     <div class="stat-card">
-        <div class="stat-icon stat-icon-gold">&#127891;</div>
+        <div class="stat-icon stat-icon-gold">
+            <i class="fa-solid fa-award"></i>
+        </div>
         <div class="stat-info">
             <div class="stat-value">{{ all_scholarships }}</div>
             <div class="stat-label">Scholarships</div>
@@ -29,7 +33,9 @@
     </div>
 
     <div class="stat-card">
-        <div class="stat-icon stat-icon-green">&#128176;</div>
+        <div class="stat-icon stat-icon-green">
+            <i class="fa-solid fa-coins"></i>
+        </div>
         <div class="stat-info">
             <div class="stat-value">{{ all_fund_src }}</div>
             <div class="stat-label">Funding Sources</div>
@@ -37,7 +43,9 @@
     </div>
 
     <div class="stat-card">
-        <div class="stat-icon stat-icon-purple">&#127970;</div>
+        <div class="stat-icon stat-icon-purple">
+            <i class="fa-solid fa-building-columns"></i>
+        </div>
         <div class="stat-info">
             <div class="stat-value">{{ all_departments }}</div>
             <div class="stat-label">Departments</div>

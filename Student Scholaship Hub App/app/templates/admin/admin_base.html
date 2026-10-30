@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Student Scholarhip Hub Admin{% endblock %}</title>
+    <title>{% block title %}Scholar Hub Admin{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 </head>
 <body>
 
@@ -14,9 +15,11 @@
         <aside class="sidebar">
 
             <div class="sidebar-logo">
-                <div class="logo-icon">S</div>
-                <div>
-                    <div class="logo-title">ScholarHub</div>
+                <div class="logo-mark">
+                    <img src="{{ url_for('static', filename='image/image.png') }}" alt="logo" class="logo-icon">
+                </div>
+                <div class="logo-copy">
+                    <div class="logo-title">Scholar Hub</div>
                     <div class="logo-sub">Admin Portal</div>
                 </div>
             </div>
@@ -26,49 +29,57 @@
             <nav class="sidebar-nav">
                 <a href="{{ url_for('dash.admin_dash') }}"
                    class="nav-link {% if request.endpoint == 'dash.admin_dash' %}active{% endif %}">
-                    <span class="nav-icon">&#9783;</span> Dashboard
+                    <span class="nav-icon"><i class="fa-solid fa-gauge-high"></i></span>
+                    <span>Dashboard</span>
                 </a>
 
                 <a href="{{ url_for('scholarship.scholar') }}"
                    class="nav-link {% if request.endpoint == 'scholarship.scholar' %}active{% endif %}">
-                    <span class="nav-icon">&#127891;</span> Scholarships
+                    <span class="nav-icon"><i class="fa-solid fa-award"></i></span>
+                    <span>Scholarships</span>
                 </a>
 
                 <a href="{{ url_for('student.std') }}"
                    class="nav-link {% if request.endpoint == 'student.std' %}active{% endif %}">
-                    <span class="nav-icon">&#128100;</span> Students
+                    <span class="nav-icon"><i class="fa-solid fa-user-graduate"></i></span>
+                    <span>Students</span>
                 </a>
 
                 <a href="{{ url_for('fund_src.fund_src') }}"
                    class="nav-link {% if request.endpoint == 'fund_src.fund_src' %}active{% endif %}">
-                    <span class="nav-icon">&#128176;</span> Funding Sources
+                    <span class="nav-icon"><i class="fa-solid fa-coins"></i></span>
+                    <span>Funding Sources</span>
                 </a>
 
                 <a href="{{ url_for('department.depart') }}"
                    class="nav-link {% if request.endpoint == 'department.depart' %}active{% endif %}">
-                    <span class="nav-icon">&#127970;</span> Departments
+                    <span class="nav-icon"><i class="fa-solid fa-building-columns"></i></span>
+                    <span>Departments</span>
                 </a>
 
                 <a href="{{ url_for('university.uni') }}"
                    class="nav-link {% if request.endpoint == 'university.uni' %}active{% endif %}">
-                    <span class="nav-icon">&#127979;</span> Universities
+                    <span class="nav-icon"><i class="fa-solid fa-school"></i></span>
+                    <span>Universities</span>
                 </a>
 
                 <a href="{{ url_for('result.result') }}"
                    class="nav-link {% if request.endpoint == 'result.result' %}active{% endif %}">
-                    <span class="nav-icon">&#128203;</span> Results
+                    <span class="nav-icon"><i class="fa-solid fa-chart-column"></i></span>
+                    <span>Results</span>
                 </a>
 
                 <a href="{{ url_for('audit_log.audit_log') }}"
                    class="nav-link {% if request.endpoint == 'audit_log.audit_log' %}active{% endif %}">
-                    <span class="nav-icon">&#128221;</span> Audit Logs
+                    <span class="nav-icon"><i class="fa-solid fa-clipboard-list"></i></span>
+                    <span>Audit Logs</span>
                 </a>
             </nav>
 
-            <!-- Bottom links -->
             <div class="sidebar-bottom">
-                <a href="{{ url_for('auth.logout') }}" class="nav-link">
-                    <span class="nav-icon">&#8594;</span> Sign Out
+                <a href="{{ url_for('auth.logout') }}" class="nav-link logout-link">
+                    <span class="nav-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
+                    <span>Sign Out</span>
                 </a>
             </div>
 

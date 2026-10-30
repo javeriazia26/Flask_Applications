@@ -28,7 +28,8 @@
 
         <label>CNIC</label><br>
         <input type="text" name="cnic"
-               value="{{ editing_student.cnic if editing_student else '' }}" required><br><br>
+               value="{{ editing_display_cnic if editing_student else '' }}" required><br><br>
+
 
         <label>Gender</label><br>
         <select name="gender" required>
@@ -39,7 +40,7 @@
 
         <label>Phone Number</label><br>
         <input type="text" name="std_phone_no"
-               value="{{ editing_student.std_phone_no if editing_student else '' }}"><br><br>
+               value="{{ editing_display_std_phone_no if editing_student else '' }}"><br><br>
 
         <label>Program</label><br>
         <input type="text" name="program"
@@ -59,7 +60,7 @@
             {% for d in departments %}
                 <option value="{{ d.d_id }}"
                     {% if editing_student and editing_student.d_id == d.d_id %}selected{% endif %}>
-                    {{ d.d_name }} {{ d.c_name }}  
+                    {{ d.d_name }} ({{ d.c_name }}) 
                 </option>
             {% endfor %}
         </select><br><br>
@@ -71,7 +72,7 @@
             {% for s in scholarships %}
                 <option value="{{ s.s_id }}"
                     {% if editing_student and editing_student.s_id == s.s_id %}selected{% endif %}>
-                    {{ s.s_id }} {{ s.s_name }}  
+                    {{ s.s_id }} ({{ s.s_name }}, {{ s.total_amount}})  
                 </option>
             {% endfor %}
         </select><br><br>
@@ -113,11 +114,14 @@
                 <td>{{ s.department.d_name }}</td>
                 <td>{{ s.semester }}</td>
                 <td>{{ s.scholarship.s_name }}</td>
-                <td>
-                    <a href="{{ url_for('student.std') }}?edit={{ s.std_id }}">Edit</a>
+                <td class="actions">
+                    <a href="{{ url_for('student.std') }}?edit={{ s.std_id }}" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i> </a>
 
                     <form method="POST" action="{{ url_for('student.delete_std', std_id=s.std_id) }}">
-                        <button type="submit">Delete</button>
+                        <button type="submit" title="Delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </form>
                 </td>
             </tr>

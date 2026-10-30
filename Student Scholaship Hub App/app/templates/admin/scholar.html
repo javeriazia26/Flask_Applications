@@ -24,7 +24,7 @@
             <option value="Merit-Base" {% if editing_scholarship and editing_scholarship.fund_type == 'Merit-Base' %}selected{% endif %}>Merit-Base</option>
             <option value="Need-Base" {% if editing_scholarship and editing_scholarship.fund_type == 'Need-Based' %}selected{% endif %}>Need-Based</option>
             <option value="Talent-Base" {% if editing_scholarship and editing_scholarship.fund_type == 'Talent-Base' %}selected{% endif %}>Talent-Base</option>
-            <option value="Research-Base" {% if editing_scholarship and editing_scholarship.fund_type == 'Research-Base' %}selected{% endif %}>Researcg-Base</option>
+            <option value="Research-Base" {% if editing_scholarship and editing_scholarship.fund_type == 'Research-Base' %}selected{% endif %}>Research-Base</option>
         </select><br><br>
 
         <label>Total Amount</label><br>
@@ -94,11 +94,14 @@
                 <td>{{ s.start_date }}</td>
                 <td>{{ s.end_date }}</td>
                 <td>{{ s.funding_source.source_name }}</td>
-                <td>
-                    <a href="{{ url_for('scholarship.scholar') }}?edit={{ s.s_id }}">Edit</a>
+                <td class="actions">
+                    <a href="{{ url_for('scholarship.scholar') }}?edit={{ s.s_id }}" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i> </a>
 
                     <form method="POST" action="{{ url_for('scholarship.delete_scholarship', s_id=s.s_id) }}">
-                        <button type="submit">Delete</button>
+                        <button type="submit" title="Delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </form>
                 </td>
             </tr>

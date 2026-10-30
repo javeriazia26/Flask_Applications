@@ -56,7 +56,7 @@
     <table border="1">
         <thead>
             <tr>
-                <th>Source Id</th>
+                <th>Source ID</th>
                 <th>Source Name</th>
                 <th>Phone Number</th>
                 <th>Email</th>
@@ -64,24 +64,33 @@
                 <th>Actions</th>
             </tr>
         </thead>
+
         <tbody>
             {% for fs in funding_sources %}
             <tr>
+                <td>{{ fs.f_source_id }}</td>
                 <td>{{ fs.source_name }}</td>
                 <td>{{ fs.phone_no }}</td>
                 <td>{{ fs.email_id }}</td>
                 <td>{{ fs.type }}</td>
-                <td>
-                    <a href="{{ url_for('fund_src.fund_src') }}?edit={{ fs.f_source_id }}">Edit</a>
 
-                    <form method="POST" action="{{ url_for('fund_src.delete_fund_src', f_source_id=fs.f_source_id) }}">
-                        <button type="submit">Delete</button>
+                <td class="actions">
+                    <a href="{{ url_for('fund_src.fund_src') }}?edit={{ fs.f_source_id }}" title="Edit">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </a>
+
+                    <form method="POST"
+                          action="{{ url_for('fund_src.delete_fund_src', f_source_id=fs.f_source_id) }}"
+                          style="display:inline;">
+                        <button type="submit" title="Delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </form>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="5">No funding sources found.</td>
+                <td colspan="6">No funding sources found.</td>
             </tr>
             {% endfor %}
         </tbody>

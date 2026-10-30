@@ -67,11 +67,14 @@
                 <td>{{ u.c_name }}</td>
                 <td>{{ u.uni_phone_no }}</td>
                 <td>{{ u.uni_location }}</td>
-                <td>
-                    <a href="{{ url_for('university.uni') }}?edit={{ u.uni_id }}">Edit</a>
+                <td class="actions">
+                    <a href="{{ url_for('university.uni') }}?edit={{ u.uni_id }}" title="Edit">
+                    <i class="fa-solid fa-pen-to-square"></i> </a>
 
                     <form method="POST" action="{{ url_for('university.delete_uni', uni_id=u.uni_id) }}">
-                        <button type="submit">Delete</button>
+                        <button type="submit" title="Delete">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </form>
                 </td>
             </tr>
