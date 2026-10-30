@@ -54,6 +54,8 @@ def add_fund_src():
     db.session.add(new_fund_src)
     db.session.commit()
     log_action('Added', 'Funding Source')
+    
+
 
     flash(f'Funding source "{source_name}" has been added successfully.', "success")
     return redirect(url_for('fund_src.fund_src'))

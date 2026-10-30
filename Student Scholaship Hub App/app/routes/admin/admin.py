@@ -23,15 +23,15 @@ def admin_required():
     return None
 
 
-def log_action(action, entity):
+def log_action(action, entity, user_id=None, username=None):
     try:
         new_log = AuditLog(
             date     = datetime.now().date(),
             time     = datetime.now().time(),
-            username = session.get('username'),
+            username = username or session.get('username'),
             action   = action,
             entity   = entity,
-            user_id  = session.get('user_id')
+            user_id  = user_id if user_id is not None else session.get('user_id')
         )
         db.session.add(new_log)
         db.session.commit()

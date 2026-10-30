@@ -3,7 +3,7 @@ from app import db
 from app.models import Student, Scholarship, Department
 from app.routes.admin.admin import admin_required, log_action   # shared helper
 from datetime import datetime
-from app.services.encryption_service import encrypt_data, hash_data
+from app.services.encryption_service import encrypt_data, hash_data, decrypt_data
 
 std_bp = Blueprint('student', __name__)
 
@@ -23,6 +23,9 @@ def std():
     editing_student = None
     if edit_id:
         editing_student = Student.query.get(edit_id)
+
+        editing_student.display_cnic = decrypt_data(editing_student.encrypted_cnic)
+        editing_student.display_std_phone_no = decrypt_data(editing_student.encrypted_phone)
 
     return render_template('admin/std.html',
         students=all_students,
@@ -73,13 +76,10 @@ def add_std():
     new_student = Student(
         first_name     = first_name,
         last_name      = last_name,
-        cnic           = cnic,
         encrypted_cnic=encrypted_cnic,
         cnic_hash=cnic_hash,
 
-        
         gender         = gender,
-        std_phone_no   = std_phone_no,
         encrypted_phone=encrypted_phone,
         phone_hash=phone_hash,
         
@@ -109,20 +109,17 @@ def edit_std(std_id):
     student    = Student.query.get_or_404(std_id)
     scholarship = Scholarship.query.all()
     department  = Department.query.all()
-    
+
 
     if request.method == 'POST':
+        
         student.first_name     = request.form.get('first_name')
         student.last_name      = request.form.get('last_name')
-        student.cnic           = request.form.get('cnic')
-        student.encrypted_cnic = encrypt_data(student.cnic)
-        student.cnic_hash = hash_data(student.cnic)
+        cnic           = request.form.get('cnic')
         
         student.gender         = request.form.get('gender')
         student.program        = request.form.get('program')
-        student.std_phone_no   = request.form.get('std_phone_no')
-        student.encrypted_phone = encrypt_data(student.std_phone_no)
-        student.phone_hash = hash_data(student.std_phone_no)
+        std_phone_no   = request.form.get('std_phone_no')
         
         admission_date_str = request.form.get('admission_date')
         student.semester       = request.form.get('semester')
@@ -131,9 +128,11 @@ def edit_std(std_id):
 
         student.admission_date = datetime.strptime(admission_date_str, '%Y-%m-%d').date() if admission_date_str else None
        
-        #for cnic    
-        cnic_hash = hash_data(student.cnic)
-    
+        #for cnic 
+        encrypted_cnic = encrypt_data(cnic)
+        cnic_hash = hash_data(cnic)  
+        student.cnic_hash = cnic_hash
+            
         existing_student = Student.query.filter(
             Student.cnic_hash == cnic_hash,
             Student.std_id != student.std_id).first()
@@ -142,16 +141,24 @@ def edit_std(std_id):
             flash("A student with this CNIC already exists.", "error")
             return redirect(url_for("student.std"))
         
+        student.encrypted_cnic = encrypted_cnic
+        student.cnic_hash = cnic_hash
+        
         #for phone
-        phone_hash = hash_data(student.std_phone_no)
+        encrypted_phone = encrypt_data(std_phone_no)
+        phone_hash = hash_data(std_phone_no) 
+        student.phone_hash = phone_hash
     
         existing_student = Student.query.filter(
-            Student.phone_hash == phone_hash,
+            Student.phone_hash == student.phone_hash,
             Student.std_id != student.std_id).first()
     
         if existing_student:
             flash("A student with this phone number already exists.", "error")
             return redirect(url_for("student.std"))
+        
+        student.encrypted_phone = encrypted_phone
+        student.phone_hash = phone_hash
         
         db.session.commit()
         log_action('Updated', 'Student')
