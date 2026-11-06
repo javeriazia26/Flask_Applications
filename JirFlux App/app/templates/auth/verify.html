@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ title | default('OTP Verification') }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body class="auth-body">
+  <div class="auth-wrap">
+
+
+    <div class="auth-card" style="text-align:center;">
+      <div class="auth-otp-icon">&#128231;</div>
+      <div class="auth-title">{{ title | default('OTP Verification') }}</div>
+      <div class="auth-subtitle">
+        {{ subtitle | default('Enter the 6-digit code we sent to your email.') }}
+        {% if email %}<br><strong>{{ email }}</strong>{% endif %}
+      </div>
+
+      {% if expired %}
+        <div class="auth-flash error">This code has expired. Please request a new one.</div>
+      {% endif %}
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="auth-flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- No explicit action: submits back to the current URL, which is the
+           same route that renders this page (GET + POST on /verify, /verify/reset_otp, /verify/device) -->
+      <form method="POST" id="otp-form" novalidate>
+        {% if csrf_token is defined %}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% endif %}
+        <input type="hidden" name="otp" id="otp-combined">
+
+        <div class="auth-otp-inputs">
+          {% for i in range(otp_length | default(6)) %}
+            <input
+              type="text"
+              inputmode="numeric"
+              maxlength="1"
+              class="auth-otp-box"
+              data-otp-index="{{ i }}"
+              autocomplete="{{ 'one-time-code' if i == 0 else 'off' }}"
+            >
+          {% endfor %}
+        </div>
+
+        <button type="submit" class="auth-btn-primary">Verify Code</button>
+      </form>
+
+      <div class="auth-resend">
+        Didn't get a code?
+        <form method="POST" action="{{ resend_url }}" style="display:inline;">
+          {% if csrf_token is defined %}
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          {% endif %}
+          <button type="submit">Resend code</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="auth-footer">
+      Having trouble? Check your spam folder, or contact support.
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var boxes = Array.prototype.slice.call(document.querySelectorAll('.auth-otp-box'));
+      var combined = document.getElementById('otp-combined');
+      var form = document.getElementById('otp-form');
+
+      function syncCombined() {
+        combined.value = boxes.map(function (b) { return b.value; }).join('');
+      }
+
+      boxes.forEach(function (box, idx) {
+        box.addEventListener('input', function () {
+          box.value = box.value.replace(/[^0-9]/g, '').slice(0, 1);
+          if (box.value && boxes[idx + 1]) {
+            boxes[idx + 1].focus();
+          }
+          syncCombined();
+        });
+
+        box.addEventListener('keydown', function (e) {
+          if (e.key === 'Backspace' && !box.value && boxes[idx - 1]) {
+            boxes[idx - 1].focus();
+          }
+        });
+
+        box.addEventListener('paste', function (e) {
+          var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+          if (!pasted) return;
+          e.preventDefault();
+          pasted.split('').forEach(function (digit, i) {
+            if (boxes[i]) boxes[i].value = digit;
+          });
+          syncCombined();
+          var next = boxes[Math.min(pasted.length, boxes.length - 1)];
+          if (next) next.focus();
+        });
+      });
+
+      form.addEventListener('submit', syncCombined);
+      if (boxes[0]) boxes[0].focus();
+    })();
+  </script>
+</body>
+</html>

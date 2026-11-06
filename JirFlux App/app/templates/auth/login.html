@@ -1,1 +1,82 @@
+<!--
+  ASSUMPTIONS (adjust once login_form.py is shared):
+  - loginForm fields are: email, password
+  - Route confirmed to read form.email / form.password (matches auth.py you shared)
+  - Login posts to '/' (auth.login), per your route decorator
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body class="auth-body">
+  <div class="auth-wrap">
 
+    <div class="auth-brand">
+      <div class="auth-brand-mark">JF</div>
+      <div class="auth-brand-name">JirFlux</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-title">Welcome back</div>
+      <div class="auth-subtitle">Sign in to continue to your workspace.</div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="auth-flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.login') }}" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="email">Email</label>
+          {{ form.email(class="auth-input", id="email", placeholder="you@company.com") }}
+          {% if form.email.errors %}
+            <div class="auth-field-error">{{ form.email.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="auth-form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="auth-label" for="password" style="margin-bottom:0;">Password</label>
+            <a href="{{ url_for('auth.forgot_password') }}" style="font-size:12.5px; color:#2563EB; text-decoration:none; font-weight:600;">Forgot password?</a>
+          </div>
+          <div class="auth-input-wrap" style="margin-top:6px;">
+            {{ form.password(class="auth-input", id="password", placeholder="Enter your password", type="password") }}
+            <button type="button" class="auth-toggle-visibility" data-toggle-for="password">&#128065;</button>
+          </div>
+          {% if form.password.errors %}
+            <div class="auth-field-error">{{ form.password.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="auth-btn-primary">Sign In</button>
+      </form>
+
+      <div class="auth-switch">
+        Don't have an account? <a href="{{ url_for('auth.register') }}">Create one</a>
+      </div>
+    </div>
+
+    <div class="auth-footer">
+      By continuing you agree to our Terms of Service &amp; Privacy Policy.
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.auth-toggle-visibility').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.dataset.toggleFor);
+        input.type = input.type === 'password' ? 'text' : 'password';
+      });
+    });
+  </script>
+</body>
+</html>

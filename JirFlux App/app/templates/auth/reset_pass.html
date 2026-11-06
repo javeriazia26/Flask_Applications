@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set a new password</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body class="auth-body">
+  <div class="auth-wrap">
+
+    <div class="auth-brand">
+      <div class="auth-brand-mark">JF</div>
+      <div class="auth-brand-name">JirFlux</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-title">Set a new password</div>
+      <div class="auth-subtitle">Choose a strong password you haven't used before.</div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="auth-flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <!-- No action attribute: posts back to the current URL, which is the
+           same route (verify.reset_password, template auth/reset_pass.html)
+           that renders this page. -->
+      <form method="POST" id="reset-form" novalidate>
+        {% if csrf_token is defined %}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% endif %}
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="password">New password</label>
+          <div class="auth-input-wrap">
+            <input class="auth-input" type="password" id="password" name="password" placeholder="Min 8 characters" required minlength="8">
+            <button type="button" class="auth-toggle-visibility" data-toggle-for="password">&#128065;</button>
+          </div>
+          <div class="auth-password-rules">Use 8+ characters with a mix of letters and numbers.</div>
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="confirm_password">Confirm new password</label>
+          <div class="auth-input-wrap">
+            <input class="auth-input" type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter your new password" required minlength="8">
+            <button type="button" class="auth-toggle-visibility" data-toggle-for="confirm_password">&#128065;</button>
+          </div>
+          <div class="auth-field-error" id="match-error" style="display:none;">Passwords don't match.</div>
+        </div>
+
+        <button type="submit" class="auth-btn-primary">Reset Password</button>
+      </form>
+    </div>
+
+    <div class="auth-footer">
+      For your security, you'll be asked to sign in again after resetting your password.
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.auth-toggle-visibility').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.dataset.toggleFor);
+        input.type = input.type === 'password' ? 'text' : 'password';
+      });
+    });
+
+    document.getElementById('reset-form').addEventListener('submit', function (e) {
+      var pw = document.getElementById('password').value;
+      var confirm = document.getElementById('confirm_password').value;
+      var errorEl = document.getElementById('match-error');
+      if (pw !== confirm) {
+        e.preventDefault();
+        errorEl.style.display = 'block';
+      } else {
+        errorEl.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

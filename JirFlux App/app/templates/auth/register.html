@@ -1,0 +1,102 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create your account</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body class="auth-body">
+  <div class="auth-wrap">
+
+    <div class="auth-brand">
+      <div class="auth-brand-mark">JF</div>
+      <div class="auth-brand-name">JirFlux</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-title">Create your account</div>
+      <div class="auth-subtitle">Start managing your projects in minutes.</div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="auth-flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('auth.register') }}" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="username">Username</label>
+          {{ form.username(class="auth-input", id="username", placeholder="alex_chen") }}
+          {% if form.username.errors %}
+            <div class="auth-field-error">{{ form.username.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="email">Work email</label>
+          {{ form.email(class="auth-input", id="email", placeholder="you@company.com") }}
+          {% if form.email.errors %}
+            <div class="auth-field-error">{{ form.email.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="password">Password</label>
+          <div class="auth-input-wrap">
+            {{ form.password(class="auth-input", id="password", placeholder="Min 8 characters", type="password") }}
+            <button type="button" class="auth-toggle-visibility" data-toggle-for="password">&#128065;</button>
+          </div>
+          {% if form.password.errors %}
+            <div class="auth-field-error">{{ form.password.errors[0] }}</div>
+          {% endif %}
+          <div class="auth-password-rules">Use 8+ characters with a mix of letters and numbers.</div>
+        </div>
+
+        {% if form.confirm_password is defined %}
+        <div class="auth-form-group">
+          <label class="auth-label" for="confirm_password">Confirm password</label>
+          <div class="auth-input-wrap">
+            {{ form.confirm_password(class="auth-input", id="confirm_password", placeholder="Re-enter your password", type="password") }}
+            <button type="button" class="auth-toggle-visibility" data-toggle-for="confirm_password">&#128065;</button>
+          </div>
+          {% if form.confirm_password.errors %}
+            <div class="auth-field-error">{{ form.confirm_password.errors[0] }}</div>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="auth-benefits">
+          <div class="auth-benefit"><span class="auth-benefit-check">&#10003;</span> Unlimited tasks &amp; projects</div>
+          <div class="auth-benefit"><span class="auth-benefit-check">&#10003;</span> Team collaboration</div>
+          <div class="auth-benefit"><span class="auth-benefit-check">&#10003;</span> Analytics &amp; reporting</div>
+        </div>
+
+        <button type="submit" class="auth-btn-primary">Create Account</button>
+      </form>
+
+      <div class="auth-switch">
+        Already have an account? <a href="{{ url_for('auth.login') }}">Sign in</a>
+      </div>
+    </div>
+
+    <div class="auth-footer">
+      By continuing you agree to our Terms of Service &amp; Privacy Policy.
+    </div>
+  </div>
+
+  <script>
+    document.querySelectorAll('.auth-toggle-visibility').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var input = document.getElementById(btn.dataset.toggleFor);
+        input.type = input.type === 'password' ? 'text' : 'password';
+      });
+    });
+  </script>
+</body>
+</html>

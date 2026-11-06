@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forgot password</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body class="auth-body">
+  <div class="auth-wrap">
+
+    <div class="auth-brand">
+      <div class="auth-brand-mark">TF</div>
+      <div class="auth-brand-name">TaskFlow</div>
+    </div>
+
+    <div class="auth-card">
+      <div class="auth-title">Forgot your password?</div>
+      <div class="auth-subtitle">Enter your email and we'll send a code to reset it.</div>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="auth-flash {{ category }}">{{ message }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      <form method="POST" id="forgot-form" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="auth-form-group">
+          <label class="auth-label" for="email">Email address</label>
+          <div class="auth-input-wrap">
+            {{ form.email(class="auth-input", id="email", placeholder="you@example.com", required=true) }}
+          </div>
+          {% if form.email.errors %}
+            <div class="auth-field-error">{{ form.email.errors[0] }}</div>
+          {% endif %}
+        </div>
+
+        <button type="submit" class="auth-btn-primary">Send reset code</button>
+      </form>
+    </div>
+
+    <div class="auth-footer">
+      Remembered it? <a href="{{ url_for('auth.login') }}">Back to sign in</a>
+    </div>
+  </div>
+</body>
+</html>
