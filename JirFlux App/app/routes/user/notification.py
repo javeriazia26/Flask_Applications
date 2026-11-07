@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, session
 from flask_login import current_user
 
 from app import db
-from app.models import Notification
+from app.models import Notification, User
 from app.routes.user.user import user_required
 
 
@@ -57,10 +57,13 @@ def notifications():
 
     # Times are stored in UTC; the template converts to the viewer's
     # local timezone client-side, so no "now" or timezone math is needed here.
+    logged_user = User.query.filter_by(user_id=user_id).first()
+
     return render_template(
         'user/notification.html',
-        user=current_user,
-        notifications=notifications
+        user=logged_user,
+        notifications=notifications,
+        active_page='notification'
     )
 
 
