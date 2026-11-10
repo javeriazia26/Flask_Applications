@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Admin{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body data-theme="{{ (user.theme if user is defined and user and user.theme else 'light') }}">
+  <script>
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem('app-theme') || 'light';
+        document.body.setAttribute('data-theme', savedTheme);
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } catch (e) {}
+    })();
+  </script>
+ 
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">JF</div>
+      <div>
+        <div class="brand-name">JirFlux</div>
+        <div class="brand-sub">Admin</div>
+      </div>
+    </div>
+ 
+    <nav>
+      <div class="nav-section-label">MENU</div>
+      <ul class="nav-list">
+        <li><a href="{{ url_for('dash.admin_dash') }}" class="{{ 'active' if active_page == 'dashboard' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="4" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/><rect x="3" y="12" width="7" height="9" rx="1.5"/></svg>
+          Dashboard
+        </a></li>
+        <li><a href="{{ url_for('audit_log.audit_log') }}" class="{{ 'active' if active_page == 'audit_log' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3.5h8l5 5V18a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2Z"/><path d="M15 3.5V9h5"/><path d="M8 13h8M8 17h8"/></svg>
+          Audit Log
+        </a></li>
+        <li><a href="{{ url_for('admin_profile.admin_profile') }}" class="{{ 'active' if active_page == 'profile' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 19a7 7 0 0 1 14 0"/></svg>
+          Profile
+        </a></li>
+        <li><a href="{{ url_for('admin_settings.admin_settings') }}" class="{{ 'active' if active_page == 'settings' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .58 1.7 1.7 0 0 0-.4 1.06V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1-.58 1.7 1.7 0 0 0-1.06.4l-.09.09a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.58-1 1.7 1.7 0 0 0-1.06-.4H2.9a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0 .58-1 1.7 1.7 0 0 0-.4-1.06l-.09-.09a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.58 1.7 1.7 0 0 0 .4-1.06V2.9a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1 .58 1.7 1.7 0 0 0 1.06-.4l.09-.09a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.23.25.56.4.9.4h.09a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+          Settings
+        </a></li>
+      </ul>
+    </nav>
+ 
+    <div class="sidebar-footer">
+      <div style="margin-bottom: 10px;">Signed in as {{ user.full_name or user.username if user is defined else "Admin" }}</div>
+      <a href="{{ url_for('auth.logout') }}" style="display:flex; align-items:center; gap:8px; color:#AFB5C6; text-decoration:none; font-size:13px; font-weight:500;">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        <span>Logout</span>
+      </a>
+    </div>
+  </aside>
+ 
+  <!-- Main content -->
+  <main class="main">
+ 
+    <div class="topbar">
+      <div>
+        <h1>{% block page_title %}Admin{% endblock %}</h1>
+        <div class="subtitle">{% block page_subtitle %}Welcome back, {{ user.full_name or user.username if user is defined else "Admin" }}{% endblock %}</div>
+      </div>
+      <div class="topbar-actions">
+        {% if user and user.picture %}
+          <img class="profile-avatar" src="{{ url_for('static', filename=user.picture.replace('static/', '')) }}" alt="{{ user.username }}">
+        {% else %}
+          <div class="avatar">{{ ((user.full_name or user.username)[0] | upper) if user is defined and (user.full_name or user.username) else "A" }}</div>
+        {% endif %}
+      </div>
+    </div>
+ 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div style="margin-bottom: 20px;">
+          {% for category, message in messages %}
+            <div style="padding: 10px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; background: {{ '#FEE2E2' if category == 'error' else '#E7F9F1' }}; color: {{ '#B91C1C' if category == 'error' else '#065F46' }};">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+ 
+    {% block content %}{% endblock %}
+ 
+  </main>
+ 
+</body>
+</html>
+ 

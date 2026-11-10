@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two Factor Authentication</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+  <style>
+  html, body {
+    height: auto;
+    min-height: 100%;
+    overflow-y: auto;
+  }
+  .tf-wrap {
+    margin: 48px auto;   /* adds space at the bottom too */
+  }
+</style>
+</head>
+<body>
+
+<div class="tf-wrap">
+
+  <div class="tf-card">
+
+    <!-- header -->
+    <h1 class="tf-title">Enable two-factor authentication (2FA)</h1>
+
+    <!-- step indicator -->
+    <div class="tf-steps">
+      <div class="tf-step is-active"><span>1</span></div>
+      <div class="tf-step-line"></div>
+      <div class="tf-step"><span>2</span></div>
+      <div class="tf-step-line"></div>
+      <div class="tf-step"><span>3</span></div>
+    </div>
+
+    <!-- body -->
+    <div class="tf-body">
+
+      <h2 class="tf-heading">Setup authenticator app</h2>
+      <p class="tf-desc">
+        Use an app like <strong>Google Authenticator</strong>, <strong>Authy</strong>,
+        or <strong>Microsoft Authenticator</strong> on your phone to generate 2FA
+        codes when signing in.
+      </p>
+
+      <div class="tf-note">
+        <span class="tf-note-icon">&#9888;</span>
+        <span>Can't scan? Open your authenticator app and add an account manually using the code shown for <strong>{{ email }}</strong>.</span>
+      </div>
+
+      <div class="tf-qr-box">
+        <img class="tf-qr" src="data:image/png;base64,{{ qr_code }}" alt="2FA QR code">
+      </div>
+
+      <form method="POST" action="{{ url_for('admin_settings.admin_verify_2fa') }}">
+        <label class="tf-label" for="code">Verify the code from the app</label>
+        <input
+          class="form-input tf-input"
+          type="text"
+          name="code"
+          id="code"
+          inputmode="numeric"
+          autocomplete="one-time-code"
+          maxlength="6"
+          placeholder="XXXXXX"
+          autofocus
+          required
+        >
+
+        <div class="tf-footer">
+          <a href="{{ url_for('admin_settings.admin_settings', tab='security') }}" class="tf-cancel">Cancel</a>
+          <button type="submit" class="tf-continue">Continue</button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+</div>
+
+
+<script>
+  (function () {
+    var input = document.getElementById('code');
+    if (!input) return;
+    input.addEventListener('input', function () {
+      input.value = input.value.replace(/\D/g, '').slice(0, 6);
+    });
+  })();
+</script>

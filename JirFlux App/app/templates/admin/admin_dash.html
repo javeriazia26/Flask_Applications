@@ -1,0 +1,52 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_title %}
+    <h1 class="page-heading">Dashboard</h1>
+    
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== RECENT ACTIVITY ===== -->
+<div class="table-card">
+
+    <div class="table-header">
+        <h2>Recent Activity</h2>
+        <a href="{{ url_for('audit_log.audit_log') }}" class="view-all-link">View All</a>
+    </div>
+
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Time</th>
+                <th>User</th>
+                <th>Action</th>
+                <th>Entity</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in audit_logs %}
+            <tr>
+                <td>{{ log.date }}</td>
+                <td>{{ log.time }}</td>
+                <td>{{ log.username }}</td>
+                <td>
+                    <span class="badge badge-{{ log.action | lower }}">{{ log.action }}</span>
+                </td>
+                <td>{{ log.entity }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="empty-row">No recent activity yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+<!-- ===== END RECENT ACTIVITY ===== -->
+
+{% endblock %}

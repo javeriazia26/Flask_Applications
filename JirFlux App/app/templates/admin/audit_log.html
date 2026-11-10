@@ -1,0 +1,43 @@
+{% extends "admin/admin_base.html" %}
+
+{% block title %}Audit Log{% endblock %}
+{% block page_title %}Audit Log{% endblock %}
+{% block page_subtitle %}A record of security and account activity{% endblock %}
+
+{% block content %}
+<div class="al-page">
+
+  <div class="al-toolbar">
+    <div class="al-count">{{ audit_logs | length }} event{{ '' if audit_logs | length == 1 else 's' }}</div>
+  </div>
+
+  <div class="al-list-wrap">
+    {% if audit_logs %}
+      <div class="al-grid al-list-head">
+        <div>Date</div>
+        <div>Time</div>
+        <div>Username</div>
+        <div>Action</div>
+        <div>Entity</div>
+      </div>
+
+      {% for log in audit_logs %}
+        <div class="al-grid al-row">
+          <div class="al-date">{{ log.date.strftime('%b %d, %Y') if log.date else '—' }}</div>
+          <div class="al-time">{{ log.time.strftime('%I:%M %p') if log.time else '—' }}</div>
+          <div class="al-username">{{ log.username or '—' }}</div>
+          <div>
+            <span class="al-action-pill{{ ' al-failed' if 'failed' in log.action else ' al-locked' if 'locked' in log.action else ' al-deleted' if 'delete' in log.action else '' }}">
+              {{ log.action.replace('-', ' ').replace('_', ' ') | title }}
+            </span>
+          </div>
+          <div class="al-entity">{{ log.entity }}</div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="al-empty">No activity recorded yet.</div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
