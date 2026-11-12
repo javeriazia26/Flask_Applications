@@ -1,9 +1,9 @@
 from datetime import datetime
-
+from email.mime import text
 from flask import Blueprint, redirect, render_template, request, session, url_for, flash
 from flask_login import current_user
 from app.routes.user.notification import create_notification
-from app.routes.user.user import log_action, user_required
+from app.routes.user.user import user_required
 from app import db
 from app.models import Team, TeamMember, User, Connection
 
@@ -44,7 +44,7 @@ def send_connection_request(user_id):
         elif connection.status == 'accepted':
             flash('You are already connected with this user.', 'info')
 
-        elif connection.status == 'rejected':
+        elif connection.status == ('rejected', 'removed'):
             # Allow sending a new request after rejection
             connection.sender_id = session['user_id']
             connection.receiver_id = user_id
@@ -55,18 +55,9 @@ def send_connection_request(user_id):
             create_notification(
                 user_id=user_id,  # notify the receiver, not the sender
                 title="Connection Request",
-                message=f"{session['user_id']} has sent you a connection request.",
+                message=f"{session['username']} has sent you a connection request.",
                 notification_type="connection"
             )
-
-        elif connection.status == 'removed':
-            # Allow reconnecting after unfriending
-            connection.sender_id = session['user_id']
-            connection.receiver_id = user_id
-            connection.status = 'pending'
-            db.session.commit()
-
-            flash('Connection request sent.', 'success')
 
         return redirect(url_for('team.team', user_id=session['user_id']))
 
@@ -84,7 +75,7 @@ def send_connection_request(user_id):
     create_notification(
         user_id=user_id,  # notify the receiver, not the sender
         title="Connection Request",
-        message=f"{session['user_id']} has sent you a connection request.",
+        message=f" {session["username"]} has sent you a connection request.",
         notification_type="connection"
     )
 
@@ -113,9 +104,6 @@ def send_connection_request_by_username():
     # from a username instead of a URL user_id.
     return send_connection_request(user.user_id)
 
-
-
-
 @connection_bp.route('/connect/accept/<int:user_id>', methods=['POST'])
 def accept_connection_request(user_id):
     denied = user_required()
@@ -124,7 +112,7 @@ def accept_connection_request(user_id):
 
     if session['user_id'] == user_id:
         flash('You cannot accept a connection request from yourself.', 'error')
-        return redirect(url_for('user.team', user_id=user_id))
+        return redirect(url_for('team.team', user_id=user_id))
 
     connection = Connection.query.filter_by(
         sender_id=user_id,
@@ -178,7 +166,7 @@ def accept_connection_request(user_id):
     create_notification(
         user_id=user_id,  # notify the original sender, not the accepter
         title="Connection Accepted",
-        message=f"{session['user_id']} has accepted your connection request.",
+        message=f" {session['username']} has accepted your connection request.",
         notification_type="connection"
     )
 
@@ -194,7 +182,7 @@ def reject_connection_request(user_id):
 
     if session['user_id'] == user_id:
         flash('You cannot reject a connection request from yourself.', 'error')
-        return redirect(url_for('user.team', user_id=user_id))
+        return redirect(url_for('team.team', user_id=user_id))
 
     connection = Connection.query.filter_by(
         sender_id=user_id,
@@ -216,6 +204,30 @@ def connection_requests():
     if denied:
         return denied
 
+    user = User.query.filter_by(user_id=session['user_id']).first()
     connections = Connection.query.filter_by(receiver_id=session['user_id'], status='pending').all()
 
-    return render_template('user/connection.html', connections=connections, user=current_user)
+    return render_template('user/connection.html', connections=connections, user=user, active_page='connection')
+
+def _attach_members(projects):
+    """Add an accepted-members list to each project dict."""
+    for p in projects.values():
+        p['members'] = []
+    if not projects:
+        return projects
+
+    rows = db.session.execute(text("""
+        SELECT pm.p_id, pm.user_id, pm.role, u.username
+        FROM project_member pm
+        JOIN users u ON u.user_id = pm.user_id
+        WHERE pm.p_id = ANY(:ids) AND pm.status = 'accepted'
+        ORDER BY u.username
+    """), {"ids": list(projects.keys())}).fetchall()
+
+    for r in rows:
+        projects[r.p_id]['members'].append({
+            'id': r.user_id,
+            'username': r.username,
+            'role': r.role,
+        })
+    return projects

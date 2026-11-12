@@ -1,56 +1,59 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from sqlalchemy import or_, text
+
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, request
 from app import db
-from app.models import AuditLog, User, WorkItem, ItemLog
+from app.models import Assignee, AuditLog, Project, ProjectMember, User, WorkItem, ItemLog
 from datetime import date, datetime
 
+from app.routes.admin import audit_log
 from app.routes.admin.admin import admin_required
-from app.routes.admin.admin import audit_log_action
+from app.routes.user.user import user_required
 
 
 dash_bp = Blueprint('dash', __name__)
 
 
+STATUS_MAP = {
+    "not-started": "Not Started",
+    "in-progress": "In Progress",
+    "completed":   "Completed",
+}
+DB_TO_KEY = {v: k for k, v in STATUS_MAP.items()}
+
+
 @dash_bp.route('/user_dash')
 def user_dash():
-    if "user_id" not in session:
-        flash("Access denied!", "error")
-        return redirect(url_for('auth.login'))
-
+    denied = user_required()
+    if denied:
+        return denied
+    
     user = User.query.filter_by(user_id=session['user_id']).first()
-    if user.u_role != "user":
-        flash("Access denied!", "error")
-        return redirect(url_for('dash.user_dash'))
-
+    
     today = date.today()
     user_id = session['user_id']
-
-    completed_count = WorkItem.query.filter_by(u_id=user_id, progress="completed").count()
-    in_progress_count = WorkItem.query.filter_by(u_id=user_id, progress="in-progress").count()
-    not_started_count = WorkItem.query.filter_by(u_id=user_id, progress="not-started").count()
-    due_today_count = WorkItem.query.filter_by(u_id=user_id, deadline=today).count()
-
-    overdue_count = (
-        WorkItem.query
-        .filter(
-            WorkItem.u_id == user_id,
-            WorkItem.deadline < today,
-            WorkItem.progress != "completed",
+    counts = db.session.execute(text("""
+        SELECT
+            COUNT(*) FILTER (WHERE w.progress = 'Completed')                        AS completed,
+            COUNT(*) FILTER (WHERE w.progress = 'In Progress')                      AS in_progress,
+            COUNT(*) FILTER (WHERE w.progress = 'Not Started')                      AS not_started,
+            COUNT(*) FILTER (WHERE w.deadline = :today)                             AS due_today,
+            COUNT(*) FILTER (WHERE w.deadline < :today AND w.progress != 'Completed') AS overdue
+        FROM work_items w
+        WHERE w.u_id = :user_id
+        OR EXISTS (
+                SELECT 1 FROM assignees a
+                WHERE a.w_id = w.work_item_id AND a.u_id = :user_id
         )
-        .count()
-    )
+    """), {"user_id": user_id, "today": today}).one()
 
-    # ItemLog.w_id -> WorkItem.work_item_id (not "item_id" — that column
-    # doesn't exist on WorkItem). ItemLog already carries denormalized
-    # `project` and `username` strings, so no extra join/relationship
-    # is needed to display them.
-    item_logs = (
-        ItemLog.query
-        .join(WorkItem, ItemLog.w_id == WorkItem.work_item_id)
-        .filter(WorkItem.u_id == user_id)
-        .order_by(ItemLog.date.desc(), ItemLog.time.desc())
-        .limit(10)
-        .all()
-    )
+    completed_count   = counts.completed
+    in_progress_count = counts.in_progress
+    not_started_count = counts.not_started
+    due_today_count   = counts.due_today
+    overdue_count     = counts.overdue
+
+    item_logs = visible_logs(user_id, 10)        # small panel
+    all_item_logs = visible_logs(user_id, 200)   # full window
 
     total_count = completed_count + in_progress_count + not_started_count
     completion_rate = round((completed_count / total_count) * 100) if total_count else 0
@@ -64,51 +67,101 @@ def user_dash():
         overdue_count=overdue_count,
         completion_rate=completion_rate,
         item_logs=item_logs,
+        all_item_logs=all_item_logs,
         today=today,
         user=user,
         active_page='dashboard',
     )
 
 
-@dash_bp.route('/board')
-def board():
-    if "user_id" not in session:
-        flash("Access denied!", "error")
-        return redirect(url_for('auth.login'))
-
-    user = User.query.filter_by(user_id=session['user_id']).first()
-    if user.u_role != "user":
-        flash("Access denied!", "error")
-        return redirect(url_for('dash.user_dash'))
-
-    user_id = session['user_id']
-
-    all_items = WorkItem.query.filter_by(u_id=user_id).order_by(WorkItem.deadline.asc()).all()
-
-    not_started_items = [i for i in all_items if i.progress == "not-started"]
-    in_progress_items = [i for i in all_items if i.progress == "in-progress"]
-    completed_items = [i for i in all_items if i.progress == "completed"]
-
-    return render_template(
-        'user/board.html',
-        not_started_items=not_started_items,
-        in_progress_items=in_progress_items,
-        completed_items=completed_items,
-        user=user,
-        active_page='board',
-    )
+def visible_logs(user_id, limit):
+    return db.session.execute(text("""
+        SELECT i.date, i.time, i.username, i.w_title, i.project, i.action
+        FROM item_log i
+        JOIN projects p ON p.project_id = i.p_id
+        WHERE p.u_id = :user_id
+           OR EXISTS (
+                SELECT 1 FROM project_member pm
+                WHERE pm.p_id = i.p_id AND pm.user_id = :user_id
+           )
+        ORDER BY i.date DESC, i.time DESC
+        LIMIT :limit
+    """), {"user_id": user_id, "limit": limit}).fetchall()
 
 @dash_bp.route('/admin_dash')
 def admin_dash():
     denied = admin_required()
     if denied:
         return denied
-
-    user = User.query.get(session["user_id"])
-
-    audit_log_action = AuditLog.query.order_by(AuditLog.date.desc(), 
-                AuditLog.time.desc()).limit(10).all()
     
-    return render_template('admin/admin_dash.html', 
-        all_audit_logs=audit_log_action,       
-        )
+    user = User.query.filter_by(user_id=session['user_id']).first()
+
+    audit_log =  AuditLog.query.order_by(AuditLog.date.desc(), AuditLog.time.desc()).limit(10).all()
+    return render_template('admin/admin_dash.html',
+        user=user,                   
+        audit_logs=audit_log,
+        active_page='dashboard')
+
+
+
+@dash_bp.route('/board')
+def board():
+    
+    denied = user_required()
+    if denied:
+        return denied
+
+    uid = session['user_id']
+    user = User.query.filter_by(user_id=uid).first()
+
+    # ids of work items assigned to me
+    assigned_ids = db.session.query(Assignee.w_id).filter(Assignee.u_id == uid)
+    
+    rows = (
+        db.session.query(WorkItem, Project.p_title)
+        .join(Project, Project.project_id == WorkItem.p_id)
+        .filter(db.or_(
+            WorkItem.u_id == uid,                    # created by me
+            WorkItem.work_item_id.in_(assigned_ids)  # assigned to me
+        ))
+        .order_by(WorkItem.deadline.asc().nulls_last())
+        .all()
+    )
+
+    columns = {key: [] for key in STATUS_MAP}
+    for item, project_name in rows:
+        item.project_name = project_name or "No project"
+        key = DB_TO_KEY.get(item.progress)
+        if key:
+            columns[key].append(item)
+
+    return render_template(
+        'user/board.html',
+        not_started_items=columns["not-started"],
+        in_progress_items=columns["in-progress"],
+        completed_items=columns["completed"],
+        user=user,
+        active_page='board',
+    )
+
+
+@dash_bp.route('/board/move', methods=['POST'])
+def board_move():
+    if "user_id" not in session:
+        return jsonify(ok=False, error="Not logged in"), 401
+
+    data = request.get_json(silent=True) or {}
+    new_status = STATUS_MAP.get(data.get("status"))
+    if not new_status:
+        return jsonify(ok=False, error="Invalid status"), 400
+
+    # Filtering by u_id means users can only move their own items
+    item = WorkItem.query.filter_by(
+        work_item_id=data.get("item_id"), u_id=session['user_id']
+    ).first()
+    if not item:
+        return jsonify(ok=False, error="Item not found"), 404
+
+    item.progress = new_status
+    db.session.commit()
+    return jsonify(ok=True)
