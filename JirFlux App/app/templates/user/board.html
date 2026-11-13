@@ -1,74 +1,108 @@
 {% extends "user/base.html" %}
 
-{% block title %}Board{% endblock %}
-
+{% block title %}Jirflux — Board{% endblock %}
 {% block page_title %}Board{% endblock %}
-{% block page_subtitle %}Drag-free view of every task by status{% endblock %}
+{% block page_subtitle %}Drag cards between columns to update status{% endblock %}
+
+{% macro column(key, label, color, items) %}
+  <div class="board-column">
+    <div class="board-column-header">
+      <span class="board-dot" style="background:{{ color }};"></span>
+      <h3>{{ label }}</h3>
+      <span class="board-count">{{ items|length }}</span>
+    </div>
+    <div class="board-column-body" data-status="{{ key }}">
+      {% for item in items %}
+        <div class="board-card {{ 'board-card-done' if key == 'completed' }}"
+             draggable="true" data-id="{{ item.work_item_id }}">
+          <div class="board-card-title">{{ item.w_title }}</div>
+          <div class="board-card-meta">{{ item.project_name }}</div>
+          <div class="board-card-meta">
+            {% if item.deadline %}Due {{ item.deadline.strftime('%b %d') }}{% else %}No deadline{% endif %}
+          </div>
+        </div>
+      {% endfor %}
+      {% if not items %}<div class="board-empty">Nothing here</div>{% endif %}
+    </div>
+  </div>
+{% endmacro %}
 
 {% block content %}
-
   <div class="board">
-
-    <div class="board-column">
-      <div class="board-column-header">
-        <span class="board-dot" style="background:#6B7280;"></span>
-        <h3>Not Started</h3>
-        <span class="board-count">{{ not_started_items|length }}</span>
-      </div>
-      <div class="board-column-body">
-        {% for item in not_started_items %}
-          <div class="board-card">
-            <div class="board-card-title">{{ item.title if item.title is defined else item.item_name }}</div>
-            {% if item.deadline %}
-              <div class="board-card-meta">Due {{ item.deadline.strftime('%b %d') if item.deadline.strftime is defined else item.deadline }}</div>
-            {% endif %}
-          </div>
-        {% else %}
-          <div class="board-empty">Nothing here</div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <div class="board-column">
-      <div class="board-column-header">
-        <span class="board-dot" style="background:#F59E0B;"></span>
-        <h3>In Progress</h3>
-        <span class="board-count">{{ in_progress_items|length }}</span>
-      </div>
-      <div class="board-column-body">
-        {% for item in in_progress_items %}
-          <div class="board-card">
-            <div class="board-card-title">{{ item.title if item.title is defined else item.item_name }}</div>
-            {% if item.deadline %}
-              <div class="board-card-meta">Due {{ item.deadline.strftime('%b %d') if item.deadline.strftime is defined else item.deadline }}</div>
-            {% endif %}
-          </div>
-        {% else %}
-          <div class="board-empty">Nothing here</div>
-        {% endfor %}
-      </div>
-    </div>
-
-    <div class="board-column">
-      <div class="board-column-header">
-        <span class="board-dot" style="background:#10B981;"></span>
-        <h3>Completed</h3>
-        <span class="board-count">{{ completed_items|length }}</span>
-      </div>
-      <div class="board-column-body">
-        {% for item in completed_items %}
-          <div class="board-card board-card-done">
-            <div class="board-card-title">{{ item.title if item.title is defined else item.item_name }}</div>
-            {% if item.deadline %}
-              <div class="board-card-meta">Due {{ item.deadline.strftime('%b %d') if item.deadline.strftime is defined else item.deadline }}</div>
-            {% endif %}
-          </div>
-        {% else %}
-          <div class="board-empty">Nothing here</div>
-        {% endfor %}
-      </div>
-    </div>
-
+    {{ column('not-started', 'Not Started', '#6B7280', not_started_items) }}
+    {{ column('in-progress', 'In Progress', '#F59E0B', in_progress_items) }}
+    {{ column('completed',   'Completed',   '#10B981', completed_items) }}
   </div>
 
+  <style>
+    .board-card[draggable="true"] { cursor: grab; }
+    .board-card.dragging { opacity: .5; }
+    .board-column-body { min-height: 80px; }
+    .board-column-body.drag-over { outline: 2px dashed #9CA3AF; outline-offset: -4px; }
+  </style>
+
+  <script>
+    let dragged = null;
+
+    function refreshColumn(body) {
+      const count = body.querySelectorAll('.board-card').length;
+      body.parentElement.querySelector('.board-count').textContent = count;
+      let empty = body.querySelector('.board-empty');
+      if (count === 0 && !empty) {
+        empty = document.createElement('div');
+        empty.className = 'board-empty';
+        empty.textContent = 'Nothing here';
+        body.appendChild(empty);
+      } else if (count > 0 && empty) {
+        empty.remove();
+      }
+    }
+
+    document.querySelectorAll('.board-card').forEach(card => {
+      card.addEventListener('dragstart', () => {
+        dragged = card;
+        card.classList.add('dragging');
+      });
+      card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    });
+
+    document.querySelectorAll('.board-column-body').forEach(body => {
+      body.addEventListener('dragover', e => {
+        e.preventDefault();
+        body.classList.add('drag-over');
+      });
+      body.addEventListener('dragleave', () => body.classList.remove('drag-over'));
+
+      body.addEventListener('drop', async e => {
+        e.preventDefault();
+        body.classList.remove('drag-over');
+        if (!dragged) return;
+
+        const fromBody = dragged.parentElement;
+        if (fromBody === body) return;
+
+        // Move optimistically, roll back if the server rejects it
+        body.appendChild(dragged);
+        dragged.classList.toggle('board-card-done', body.dataset.status === 'completed');
+        refreshColumn(fromBody);
+        refreshColumn(body);
+
+        try {
+          const res = await fetch("{{ url_for('dash.board_move') }}", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ item_id: dragged.dataset.id, status: body.dataset.status })
+          });
+          const data = await res.json();
+          if (!data.ok) throw new Error(data.error);
+        } catch (err) {
+          fromBody.appendChild(dragged);
+          dragged.classList.toggle('board-card-done', fromBody.dataset.status === 'completed');
+          refreshColumn(fromBody);
+          refreshColumn(body);
+          alert("Couldn't update status. Please try again.");
+        }
+      });
+    });
+  </script>
 {% endblock %}

@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Jirflux — Work Items{% endblock %}
+{% block page_title %}Work Items{% endblock %}
+{% block page_subtitle %}Everything you created or are assigned to{% endblock %}
+
+{% block content %}
+<style>
+  /* ---------- Work Items ---------- */
+  .wi-list-wrap { background: #fff; border: 1px solid #eceff5; border-radius: 12px; overflow: hidden; }
+
+  .wi-grid {
+    display: grid;
+    grid-template-columns: minmax(200px, 2fr) 160px 180px 90px;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .wi-list-head {
+    font-size: 11px; font-weight: 600; letter-spacing: .4px; color: #9aa0b0;
+    padding: 12px 18px; border-bottom: 1px solid #eceff5;
+  }
+
+  .wi-row { padding: 14px 18px; border-bottom: 1px solid #f1f2f5; }
+  .wi-row:last-child { border-bottom: none; }
+  .wi-row:hover { background: #fbfcff; }
+
+  .wi-task-title { font-size: 13.5px; font-weight: 700; color: #1a1d29; }
+  .wi-project-name { font-size: 12px; color: #9aa0b0; margin-top: 3px; }
+
+  .wi-assignees { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .wi-assignee-chip { position: relative; display: inline-flex; align-items: center; }
+  .wi-remove-btn {
+    position: absolute; top: -4px; right: -4px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: #e03131; color: #fff; border: 1.5px solid #fff;
+    font-size: 10px; line-height: 1; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; padding: 0;
+  }
+
+  .wi-inline-form { margin: 0; display: inline; }
+
+  .wi-assign-dropdown { position: relative; }
+  .wi-assign-btn {
+    background: #eef1fb; color: #3b5bdb; border: none;
+    font-size: 11.5px; font-weight: 600; padding: 5px 10px;
+    border-radius: 999px; cursor: pointer; white-space: nowrap;
+  }
+  .wi-assign-btn:hover { background: #dfe6fb; }
+
+  .wi-assign-menu {
+    display: none;
+    position: absolute; top: calc(100% + 6px); left: 0; z-index: 20;
+    background: #fff; border: 1px solid #eceff5; border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(20, 30, 60, .12);
+    min-width: 190px; padding: 10px;
+  }
+  .wi-assign-menu.open { display: block; }
+
+  .wi-assign-menu input {
+    width: 100%; border: 1px solid #e5e7eb; border-radius: 7px;
+    padding: 7px 9px; font-size: 12.5px; margin-bottom: 8px;
+  }
+  .wi-assign-menu button[type="submit"] {
+    width: 100%; background: #3b5bdb; color: #fff; border: none;
+    border-radius: 7px; padding: 7px 0; font-size: 12.5px; font-weight: 600; cursor: pointer;
+  }
+
+  .wi-actions { display: flex; align-items: center; gap: 2px; }
+  .wi-icon-btn {
+    width: 28px; height: 28px; border: none; background: transparent; border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    color: #9aa0b0; cursor: pointer; text-decoration: none; font-size: 13px;
+  }
+  .wi-icon-btn:hover { background: #eef1fb; color: #3b5bdb; }
+  .wi-icon-btn.wi-danger:hover { background: #fef2f2; color: #e03131; }
+
+  .wi-empty { text-align: center; color: #9aa0b0; font-size: 13px; padding: 40px 0; }
+
+  @media (max-width: 760px) {
+    .wi-grid { grid-template-columns: minmax(160px, 1fr) 120px; }
+    .wi-list-head > div:nth-child(3),
+    .wi-row > div:nth-child(3) { display: none; }
+  }
+</style>
+
+{#
+  work_items rows come straight from workitem.py's query:
+    [0] work_item_id  [1] p_title  [2] w_title  [3] creator u_id (w.u_id)  [4] assignee u_id (a.u_id)
+  Read by position because w.u_id and a.u_id share the column name "u_id".
+  Grouped by work_item_id since the LEFT JOIN on assignees repeats a row per assignee.
+#}
+{% set items = {} %}
+{% for row in work_items %}
+  {% set wid = row[0] %}
+  {% if wid not in items %}
+    {% set _ = items.update({wid: {
+        'p_title': row[1],
+        'w_title': row[2],
+        'creator_id': row[3],
+        'assignees': []
+    }}) %}
+  {% endif %}
+  {% if row[4] and row[4] not in items[wid]['assignees'] %}
+    {% set _ = items[wid]['assignees'].append(row[4]) %}
+  {% endif %}
+{% endfor %}
+
+{% if items %}
+  <div class="wi-list-wrap">
+    <div class="wi-grid wi-list-head">
+      <div>Task</div>
+      <div>Project</div>
+      <div>Assignees</div>
+      <div>Actions</div>
+    </div>
+
+    {% for work_item_id, item in items.items() %}
+      {% set is_creator = (item.creator_id == session.user_id) %}
+      <div class="wi-row wi-grid">
+        <div class="wi-task-title">{{ item.w_title }}</div>
+        <div class="wi-project-name">{{ item.p_title }}</div>
+
+        <div class="wi-assignees">
+          <div class="tk-avatars">
+            {% for aid in item.assignees %}
+              <div class="wi-assignee-chip">
+                <span class="tk-avatar av{{ aid % 6 }}" title="User #{{ aid }}">{{ aid }}</span>
+                {% if is_creator %}
+                  <form method="POST" action="{{ url_for('workitem.remove_assignee', w_id=work_item_id, user_id=aid) }}" class="wi-inline-form">
+                    <button type="submit" class="wi-remove-btn" title="Remove assignee">&times;</button>
+                  </form>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+
+          {% if is_creator %}
+            <div class="wi-assign-dropdown">
+              <button type="button" class="wi-assign-btn" onclick="this.nextElementSibling.classList.toggle('open')">+ Assign</button>
+              <div class="wi-assign-menu">
+                <form method="POST" action="{{ url_for('workitem.add_assignee', w_id=work_item_id) }}">
+                  <input type="number" name="user_id" placeholder="User ID" required>
+                  <button type="submit">Assign</button>
+                </form>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+
+        {% if is_creator %}
+          <div class="wi-actions">
+            <a href="{{ url_for('workitem.edit_workitem', p_id=0, w_id=work_item_id) }}" class="wi-icon-btn" title="Edit" aria-label="Edit work item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            </a>
+            <form method="POST" action="{{ url_for('workitem.delete_workitem', p_id=0, w_id=work_item_id) }}"
+                  onsubmit="return confirm('Delete this work item?');" class="wi-inline-form">
+              <button type="submit" class="wi-icon-btn wi-danger" title="Delete" aria-label="Delete work item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+              </button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="wi-empty">No work items yet.</div>
+{% endif %}
+
+<script>
+  document.addEventListener('click', function (e) {
+    document.querySelectorAll('.wi-assign-menu.open').forEach(function (menu) {
+      if (!menu.contains(e.target) && e.target !== menu.previousElementSibling) {
+        menu.classList.remove('open');
+      }
+    });
+  });
+</script>
+{% endblock %}

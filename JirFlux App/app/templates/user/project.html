@@ -1,486 +1,748 @@
 {% extends "user/base.html" %}
 
-{% block title %}Projects{% endblock %}
+{% block title %}Jirflux — Projects{% endblock %}
 {% block page_title %}Projects{% endblock %}
 {% block page_subtitle %}Everything you own or are assigned to, in one place{% endblock %}
 
 {% block content %}
 
+{# ---------- Icon sprite (inline, no external files) ---------- #}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-user-plus" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M19 8v6M16 11h6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></symbol>
+  </defs>
+</svg>
+
 {% set active_count = projects.values() | selectattr('current_status', 'equalto', 'Active') | list | length %}
 {% set completed_count = projects.values() | selectattr('current_status', 'equalto', 'Completed') | list | length %}
 
 <div class="projects-page-actions">
-  <button type="button" class="tk-btn-primary" onclick="document.getElementById('add-project-modal').classList.remove('hidden')">
-    + New Project
+  <button type="button" class="pd-btn pd-btn-primary" data-open="add-project-modal">
+    <svg class="pd-ic"><use href="#i-plus"/></svg> New project
   </button>
 </div>
 
-<div class="pj-toolbar">
-  <div class="pj-tabs">
-    <button type="button" class="pj-tab active" data-filter="all">All Projects <span class="pj-count">{{ projects|length }}</span></button>
-    <button type="button" class="pj-tab" data-filter="Active">Active <span class="pj-count">{{ active_count }}</span></button>
-    <button type="button" class="pj-tab" data-filter="Completed">Completed <span class="pj-count">{{ completed_count }}</span></button>
-  </div>
-</div>
+<div class="pj-toolbar"><div class="pj-tabs">
+  <button type="button" class="pj-tab active" data-filter="all">All projects <span class="pj-count">{{ projects|length }}</span></button>
+  <button type="button" class="pj-tab" data-filter="Active">Active <span class="pj-count">{{ active_count }}</span></button>
+  <button type="button" class="pj-tab" data-filter="Completed">Completed <span class="pj-count">{{ completed_count }}</span></button>
+</div></div>
 
 {% if projects %}
-  <div class="pj-grid">
-    {% for project_id, proj in projects.items() %}
-      {% set is_owner = (proj.owner_id == current_user_id) %}
-      {% set percent = ((proj.done / proj.total) * 100) | round(0, 'floor') if proj.total > 0 else 0 %}
-      {% set banner_class = 'pj-banner-' ~ (loop.index0 % 6) %}
-      {% set status = proj.current_status or 'Active' %}
-      {% set status_class = 's-completed' if status == 'Completed' else ('s-onhold' if status == 'On Hold' else 's-active') %}
+<div class="pj-grid">
+  {% for project_id, proj in projects.items() %}
+    {% set is_owner = (proj.owner_id == current_user_id) %}
+    {% set percent = (proj.done * 100 // proj.total) if proj.total > 0 else 0 %}
+    {% set status = proj.current_status or 'Active' %}
+    {% set status_class = 's-completed' if status == 'Completed' else ('s-onhold' if status == 'On Hold' else 's-active') %}
 
-      <div class="pj-card" data-status="{{ status }}" data-project-id="{{ project_id }}" tabindex="0">
-        <div class="pj-banner {{ banner_class }}">
-          <div class="pj-banner-icon">&#9670;</div>
-          <span class="pj-status {{ status_class }}">{{ status }}</span>
+    <div class="pj-card" data-status="{{ status }}" data-project-id="{{ project_id }}" tabindex="0">
+      <div class="pj-banner pj-banner-{{ loop.index0 % 6 }}">
+        <div class="pj-banner-icon"><svg class="pd-ic"><use href="#i-folder"/></svg></div>
+        <span class="pj-status {{ status_class }}">{{ status }}</span>
+      </div>
+      <div class="pj-body">
+        <div class="pj-title">{{ proj.title }}</div>
+        <div class="pj-desc">{{ proj.description or '' }}</div>
+        <div class="pj-progress">
+          <span class="pj-progress-label">{{ proj.done }} of {{ proj.total }} tasks</span>
+          <div class="pj-bar"><div class="pj-bar-fill" style="width: {{ percent }}%"></div></div>
+          <span class="pj-pct">{{ percent }}%</span>
         </div>
-
-        <div class="pj-body">
-          <div class="pj-title">{{ proj.title }}</div>
-          <div class="pj-desc">{{ proj.description or '' }}</div>
-
-          <div class="pj-progress">
-            <span class="pj-progress-label">{{ proj.done }} of {{ proj.total }} tasks</span>
-            <div class="pj-bar"><div class="pj-bar-fill" style="width: {{ percent }}%"></div></div>
-            <span class="pj-pct">{{ percent }}%</span>
-          </div>
-
-          <div class="pj-footer">
-            <div class="pj-avatars">
-              {% for person in proj.assignees[:3] %}
-                <div class="pj-avatar av{{ person.id % 6 }}" title="{{ person.username or ('User #' ~ person.id) }}">
-                  {{ (person.username[:2] if person.username else person.id) | upper }}
-                </div>
-              {% endfor %}
-              {% if proj.assignees|length > 3 %}
-                <div class="pj-avatar pj-more">+{{ proj.assignees|length - 3 }}</div>
-              {% endif %}
-            </div>
-            {% if proj.deadline %}
-              <span class="pj-date">&#128337; {{ proj.deadline.strftime('%b %d') }}</span>
+        <div class="pj-footer">
+          <div class="pj-avatars">
+            {% for m in proj.members[:3] %}
+              <div class="pj-avatar av{{ m.id % 6 }}" title="{{ m.username }}">{% if m.picture %}<img src="{{ m.picture }}" alt="">{% else %}{{ m.username[:2] | upper }}{% endif %}</div>
+            {% endfor %}
+            {% if proj.members|length > 3 %}
+              <div class="pj-avatar pj-more">+{{ proj.members|length - 3 }}</div>
             {% endif %}
           </div>
+          {% if proj.deadline %}<span class="pd-muted">Due {{ proj.deadline.strftime('%b %d') }}</span>{% endif %}
         </div>
-      </div>
-
-      <!-- data for this project's detail modal -->
-      <script type="application/json" class="pj-data" data-project-id="{{ project_id }}">
-        {{ {
-          'id': project_id,
-          'title': proj.title,
-          'description': proj.description,
-          'status': status,
-          'is_owner': is_owner,
-          'start_date': proj.start_date.strftime('%Y-%m-%d') if proj.start_date else '',
-          'deadline': proj.deadline.strftime('%Y-%m-%d') if proj.deadline else '',
-          'done': proj.done,
-          'total': proj.total,
-          'percent': percent,
-          'assignees': proj.assignees,
-          'work_items': proj.work_items,
-          'can_add_workitem': proj.can_add_workitem,
-          'edit_url': url_for('project.edit_project', p_id=project_id),
-          'delete_url': url_for('project.delete_project', p_id=project_id),
-          'add_workitem_url': url_for('workitem.add_workitem', p_id=project_id),
-        } | tojson }}
-      </script>
-    {% endfor %}
-  </div>
-{% else %}
-  <div class="pj-empty">You don't have any projects yet.</div>
-{% endif %}
-
-<!-- ===== Project detail modal ===== -->
-<div id="pj-detail-modal" class="pj-modal-overlay hidden">
-  <div class="pj-modal">
-    <button type="button" class="pj-modal-close" id="pj-modal-close">&times;</button>
-
-    <div class="pj-modal-layout">
-      <div class="pj-modal-main">
-        <div class="pj-modal-header">
-          <span id="pj-d-status" class="pj-status s-active">Active</span>
-          <h2 id="pj-d-title">Project title</h2>
-          <p id="pj-d-desc" class="pj-d-desc"></p>
-        </div>
-
-        <div class="pj-d-meta">
-          <div><span class="pj-d-meta-label">Start</span><span id="pj-d-start">-</span></div>
-          <div><span class="pj-d-meta-label">Deadline</span><span id="pj-d-deadline">-</span></div>
-        </div>
-
-        <div class="pj-progress pj-d-progress">
-          <span class="pj-progress-label" id="pj-d-progress-label">0 of 0 tasks</span>
-          <div class="pj-bar"><div class="pj-bar-fill" id="pj-d-bar-fill" style="width:0%"></div></div>
-          <span class="pj-pct" id="pj-d-pct">0%</span>
-        </div>
-
-        <div class="pj-d-section">
-          <h3>Team</h3>
-          <div class="pj-avatars" id="pj-d-assignees"></div>
-        </div>
-
-        <div class="pj-d-section">
-          <div class="pj-d-section-head">
-            <h3>Work items</h3>
-            <button type="button" class="pj-add-wi-btn hidden" id="pj-add-wi-btn">+ Add work item</button>
-          </div>
-          <ul class="pj-d-worklist" id="pj-d-worklist"></ul>
-
-          <form method="POST" id="pj-add-wi-form" class="pj-edit-form hidden">
-            <label>Title
-              <input type="text" name="w_title" id="pj-wi-title" required>
-            </label>
-            <label>Description
-              <textarea name="w_des" id="pj-wi-des" rows="2"></textarea>
-            </label>
-            <div class="pj-edit-row">
-              <label>Priority
-                <select name="priority" id="pj-wi-priority">
-                  <option value="Low">Low</option>
-                  <option value="Medium" selected>Medium</option>
-                  <option value="High">High</option>
-                </select>
-              </label>
-              <label>Progress
-                <select name="progress" id="pj-wi-progress">
-                  <option value="Not Started" selected>Not Started</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Completed">Completed</option>
-                </select>
-              </label>
-            </div>
-            <div class="pj-edit-row">
-              <label>Start date
-                <input type="date" name="start_date" id="pj-wi-start">
-              </label>
-              <label>End date
-                <input type="date" name="end_date" id="pj-wi-end">
-              </label>
-              <label>Deadline
-                <input type="date" name="deadline" id="pj-wi-deadline">
-              </label>
-            </div>
-            <div class="pj-edit-actions">
-              <button type="button" class="tk-btn-secondary" id="pj-wi-cancel">Cancel</button>
-              <button type="submit" class="tk-btn-primary">Add work item</button>
-            </div>
-          </form>
-        </div>
-      </div>
-
-      <!-- side actions -->
-      <div class="pj-modal-side" id="pj-d-owner-actions">
-        <button type="button" class="pj-side-btn" id="pj-d-edit-btn" title="Edit project">
-          &#9998;<span>Edit</span>
-        </button>
-        <form method="POST" id="pj-d-delete-form" onsubmit="return confirm('Delete this project? This cannot be undone.');">
-          <button type="submit" class="pj-side-btn pj-side-btn-danger" title="Delete project">
-            &#128465;<span>Delete</span>
-          </button>
-        </form>
       </div>
     </div>
 
-    <!-- inline edit form, hidden until "Edit" is clicked -->
-    <form method="POST" id="pj-edit-form" class="pj-edit-form hidden">
-      <label>Title
-        <input type="text" name="p_title" id="pj-e-title" required>
-      </label>
-      <label>Description
-        <textarea name="p_des" id="pj-e-des" rows="3"></textarea>
-      </label>
-      <div class="pj-edit-row">
-        <label>Start date
-          <input type="date" name="start_date" id="pj-e-start">
+    {# Dates are converted to plain text here so JavaScript can use them #}
+    {% set wis = [] %}
+    {% for wi in proj.work_items %}
+      {% set _ = wis.append({
+        'id': wi.id,
+        'title': wi.w_title,
+        'description': wi.description or '',
+        'priority': wi.priority,
+        'status': wi.status,
+        'start_date': wi.start_date.strftime('%Y-%m-%d') if wi.start_date else '',
+        'deadline': wi.deadline.strftime('%Y-%m-%d') if wi.deadline else '',
+        'assignees': wi.assignees,
+        'creator': wi.creator,
+        'creator': wi.creator or none,
+        'comments': wi.comments,
+        'files': wi.files,
+        'can_edit': is_owner or (proj.can_add_workitem and (wi.creator_id is not defined or wi.creator_id == current_user_id))
+      }) %}
+    {% endfor %}
+
+    <script type="application/json" class="pd-data" data-project-id="{{ project_id }}">
+      {{ {
+        'id': project_id,
+        'title': proj.title,
+        'description': proj.description or '',
+        'status': status,
+        'is_owner': is_owner,
+        'start_date': proj.start_date.strftime('%Y-%m-%d') if proj.start_date else '',
+        'deadline': proj.deadline.strftime('%Y-%m-%d') if proj.deadline else '',
+        'done': proj.done,
+        'total': proj.total,
+        'percent': percent,
+        'owner': proj.owner,
+        'members': proj.members,
+        'work_items': wis,
+        'can_edit_workitems': proj.can_add_workitem,
+        'current_user_id': current_user_id,
+        'edit_url': url_for('project.edit_project', p_id=project_id),
+        'delete_url': url_for('project.delete_project', p_id=project_id),
+        'leave_url': url_for('project.leave_project', p_id=project_id),
+        'add_member_url': url_for('project.add_member', p_id=project_id),
+        'remove_member_url': url_for('project.remove_member', p_id=project_id, user_id=0),
+        'add_workitem_url': url_for('workitem.add_workitem', p_id=project_id),
+        'edit_workitem_url': url_for('workitem.edit_workitem', p_id=project_id, w_id=0),
+        'delete_workitem_url': url_for('workitem.delete_workitem', p_id=project_id, w_id=0),
+        'assign_url': url_for('assignee.assign_workitem', p_id=project_id, w_id=987654321),
+        'unassign_url': url_for('assignee.unassign_workitem', p_id=project_id, w_id=987654321, user_id=123456789),
+        'github_url': proj.github_url or '',
+        'set_github_url': url_for('project.set_github', p_id=project_id),
+        'add_comment_url': url_for('comment.add_comment', project_id=project_id, work_item_id=987654321),
+        'edit_comment_url': url_for('comment.edit_comment', project_id=project_id, work_item_id=987654321, comment_id=123456789),
+        'delete_comment_url': url_for('comment.delete_comment', project_id=project_id, work_item_id=987654321, comment_id=123456789),
+        'can_attach_files': proj.can_add_workitem,
+        'add_file_url': url_for('attachment.add_file', p_id=project_id, w_id=987654321),
+        'file_url': url_for('attachment.download_file', p_id=project_id, w_id=987654321, f_id=123456789),
+        'delete_file_url': url_for('attachment.delete_file', p_id=project_id, w_id=987654321, f_id=123456789)
+      } | tojson }}
+    </script>
+  {% endfor %}
+</div>
+{% else %}
+  <div class="pj-empty">You don't have any projects yet. Create one to get started.</div>
+{% endif %}
+
+{# ================= Project detail (fills the area right of the sidebar) ================= #}
+<div id="pd-detail" class="pd-detail" hidden>
+  <div class="pd-detail-inner">
+
+    <div class="pd-detail-main">
+      <div class="pd-detail-top">
+        <span id="d-status" class="pd-pill">Active</span>
+        <button type="button" class="pd-icon-btn" id="d-close" aria-label="Close"><svg class="pd-ic"><use href="#i-x"/></svg></button>
+      </div>
+
+      <h2 id="d-title" class="pd-h2"></h2>
+      <p id="d-desc" class="pd-muted pd-lead"></p>
+
+      <div class="pd-meta">
+        <div><span class="pd-muted">Start</span><strong id="d-start">-</strong></div>
+        <div><span class="pd-muted">Deadline</span><strong id="d-deadline">-</strong></div>
+      </div>
+
+      <div class="pj-progress">
+        <span class="pj-progress-label" id="d-progress-label"></span>
+        <div class="pj-bar"><div class="pj-bar-fill" id="d-bar"></div></div>
+        <span class="pj-pct" id="d-pct"></span>
+      </div>
+
+      {# Project edit form (opened by the Edit button on the right) #}
+      <form method="POST" id="d-edit-form" class="pd-form pd-box" hidden>
+        <h3 class="pd-h3">Edit project</h3>
+        <label>Title <input type="text" name="p_title" id="e-title" required></label>
+        <label>Description <textarea name="p_des" id="e-des" rows="3"></textarea></label>
+        <div class="pd-row">
+          <label>Start date <input type="date" name="start_date" id="e-start"></label>
+          <label>Deadline <input type="date" name="deadline" id="e-deadline"></label>
+        </div>
+        <label>Status
+          <select name="current_status" id="e-status">
+            <option>Active</option><option>Completed</option><option>On Hold</option>
+          </select>
         </label>
-        <label>Deadline
-          <input type="date" name="deadline" id="pj-e-deadline">
-        </label>
+        <div class="pd-form-actions">
+          <button type="button" class="pd-btn" id="e-cancel">Cancel</button>
+          <button type="submit" class="pd-btn pd-btn-primary">Save changes</button>
+        </div>
+      </form>
+
+      {# GitHub repository link: shown to everyone, editable by the owner only #}
+      <section class="pd-section">
+        <h3 class="pd-h3">Repository</h3>
+        <div id="d-repo-view"></div>
+        <form method="POST" id="d-repo-form" class="pd-form pd-box" hidden>
+          <label>GitHub link
+            <input type="text" name="github_url" id="d-repo-input" maxlength="300"
+                   placeholder="https://github.com/owner/repo">
+          </label>
+          <span class="pd-muted">Leave it empty and save to remove the link.</span>
+          <div class="pd-form-actions">
+            <button type="submit" class="pd-btn pd-btn-primary">Save link</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="pd-section">
+        <h3 class="pd-h3">Project members</h3>
+        <div id="d-members"></div>
+        <form method="POST" id="d-member-form" class="pd-form pd-box" hidden>
+          <div class="pd-row">
+            <label>Username (must be in your friend list) <input type="text" name="username" required></label>
+            <label>Role
+              <select name="role"><option value="member">Member</option><option value="visitor">Visitor</option></select>
+            </label>
+          </div>
+          <div class="pd-form-actions">
+            <button type="button" class="pd-btn" id="m-cancel">Cancel</button>
+            <button type="submit" class="pd-btn pd-btn-primary">Add member</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="pd-section">
+        <div class="pd-section-head">
+          <h3 class="pd-h3">Work items</h3>
+          <button type="button" class="pd-btn pd-btn-soft" id="wi-new-btn" hidden>
+            <svg class="pd-ic"><use href="#i-plus"/></svg> Add work item
+          </button>
+        </div>
+        <div id="d-worklist" class="pd-worklist"></div>
+      </section>
+    </div>
+
+    {# Right-hand action column #}
+    <aside class="pd-detail-side" id="d-side">
+      <form method="POST" id="d-leave-form" hidden
+            onsubmit="return confirm('Leave this project? You will also be removed from its work items.');">
+        <button type="submit" class="pd-side-btn pd-danger"><svg class="pd-ic"><use href="#i-logout"/></svg><span>Leave</span></button>
+      </form>
+      <button type="button" class="pd-side-btn" id="d-edit-btn"><svg class="pd-ic"><use href="#i-edit"/></svg><span>Edit</span></button>
+      <button type="button" class="pd-side-btn" id="d-member-btn"><svg class="pd-ic"><use href="#i-user-plus"/></svg><span>Add member</span></button>
+      <form method="POST" id="d-delete-form" onsubmit="return confirm('Delete this project and all its work items? This cannot be undone.');">
+        <button type="submit" class="pd-side-btn pd-danger"><svg class="pd-ic"><use href="#i-trash"/></svg><span>Delete</span></button>
+      </form>
+    </aside>
+
+    {# Work item drawer: slides in from the right. Used for both "add" and "edit". #}
+    <div class="pd-drawer" id="wi-drawer" aria-hidden="true">
+      <div class="pd-drawer-head">
+        <h3 class="pd-h3" id="wi-drawer-title">Work item</h3>
+        <button type="button" class="pd-icon-btn" id="wi-close" aria-label="Close"><svg class="pd-ic"><use href="#i-x"/></svg></button>
+      </div>
+
+      <form method="POST" id="wi-form" class="pd-form">
+        <label>Title <input type="text" name="w_title" id="wi-title" required></label>
+        <label>Description <textarea name="w_des" id="wi-des" rows="4"></textarea></label>
+        <div class="pd-row">
+          <label>Priority
+            <select name="priority" id="wi-priority"><option>Low</option><option>Medium</option><option>High</option></select>
+          </label>
+          <label>Progress
+            <select name="progress" id="wi-progress"><option>Not Started</option><option>In Progress</option><option>Completed</option></select>
+          </label>
+        </div>
+        <div class="pd-row">
+          <label>Start date <input type="date" name="start_date" id="wi-start"></label>
+          <label>Deadline <input type="date" name="deadline" id="wi-deadline"></label>
+        </div>
+        <div id="wi-new-assignees" hidden>
+          <span class="pd-muted">Assignees</span>
+          <details class="pd-multi" id="wi-multi">
+            <summary id="wi-multi-summary">Select assignees</summary>
+            <div class="pd-multi-list" id="wi-multi-list"></div>
+          </details>
+        </div>
+        <div class="pd-form-actions" id="wi-save-row">
+          <button type="submit" class="pd-btn pd-btn-primary" id="wi-save">Save changes</button>
+        </div>
+      </form>
+
+      <div id="wi-assignees" class="pd-assignees" hidden>
+        <h3 class="pd-h3">Assignees</h3>
+        <div id="wi-assignee-list"></div>
+        <form method="POST" id="wi-assign-form" class="pd-assign-form">
+          <select name="user_id" id="wi-assign-select"></select>
+          <button type="submit" class="pd-btn pd-btn-soft">Assign</button>
+        </form>
+      </div>
+
+      <div id="wi-comments" class="pd-comments" hidden>
+        <h3 class="pd-h3">Comments</h3>
+        <div id="wi-comment-list"></div>
+        <form method="POST" id="wi-comment-form" class="pd-comment-form">
+          <textarea name="comment" rows="3" maxlength="1000" placeholder="Write a comment..." required></textarea>
+          <button type="submit" class="pd-btn pd-btn-primary">Post comment</button>
+        </form>
+      </div>
+
+      <div id="wi-files" class="pd-files" hidden>
+        <h3 class="pd-h3">Files</h3>
+        <div id="wi-file-list"></div>
+        <form method="POST" id="wi-file-form" class="pd-file-form" enctype="multipart/form-data" hidden>
+
+          <input type="file" name="file" id="wi-file-input" accept=".png,.jpg,.jpeg,.pdf" required>
+          <button type="submit" class="pd-btn pd-btn-primary"><svg class="pd-ic"><use href="#i-upload"/></svg> Upload</button>
+          <span class="pd-muted">PNG, JPEG or PDF, up to 5 MB.</span>
+        </form>
+      </div>
+
+      <form method="POST" id="wi-delete-form" class="pd-drawer-delete" onsubmit="return confirm('Delete this work item?');">
+        <button type="submit" class="pd-btn pd-btn-danger"><svg class="pd-ic"><use href="#i-trash"/></svg> Delete work item</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+{# ================= New project modal ================= #}
+<div id="add-project-modal" class="pd-overlay" hidden>
+  <div class="pd-modal">
+    <div class="pd-detail-top">
+      <h3 class="pd-h2" style="font-size:1.15rem">New project</h3>
+      <button type="button" class="pd-icon-btn" data-close="add-project-modal" aria-label="Close"><svg class="pd-ic"><use href="#i-x"/></svg></button>
+    </div>
+    <form method="POST" action="{{ url_for('project.add_project') }}" class="pd-form">
+      <label>Title <input type="text" name="p_title" required></label>
+      <label>Description <textarea name="p_des" rows="3"></textarea></label>
+      <div class="pd-row">
+        <label>Start date <input type="date" name="start_date"></label>
+        <label>Deadline <input type="date" name="deadline"></label>
       </div>
       <label>Status
-        <select name="current_status" id="pj-e-status">
-          <option value="Active">Active</option>
-          <option value="Completed">Completed</option>
-          <option value="On Hold">On Hold</option>
-        </select>
+        <select name="current_status"><option selected>Active</option><option>Completed</option><option>On Hold</option></select>
       </label>
-      <div class="pj-edit-actions">
-        <button type="button" class="tk-btn-secondary" id="pj-e-cancel">Cancel</button>
-        <button type="submit" class="tk-btn-primary">Save changes</button>
+      <div class="pd-form-actions">
+        <button type="button" class="pd-btn" data-close="add-project-modal">Cancel</button>
+        <button type="submit" class="pd-btn pd-btn-primary">Create project</button>
       </div>
     </form>
   </div>
 </div>
 
-<!-- ===== Add project modal ===== -->
-<div id="add-project-modal" class="pj-modal-overlay hidden">
-  <div class="pj-modal" style="max-width: 480px;">
-    <button type="button" class="pj-modal-close" id="pj-add-modal-close">&times;</button>
-    <h2 style="margin: 0 0 1.25rem;">New project</h2>
-
-    <form method="POST" action="{{ url_for('project.add_project') }}" class="pj-edit-form">
-      <label>Title
-        <input type="text" name="p_title" required>
-      </label>
-      <label>Description
-        <textarea name="p_des" rows="3"></textarea>
-      </label>
-      <div class="pj-edit-row">
-        <label>Start date
-          <input type="date" name="start_date">
-        </label>
-        <label>Deadline
-          <input type="date" name="deadline">
-        </label>
-      </div>
-      <label>Status
-        <select name="current_status">
-          <option value="Active" selected>Active</option>
-          <option value="Completed">Completed</option>
-          <option value="On Hold">On Hold</option>
-        </select>
-      </label>
-      <div class="pj-edit-actions">
-        <button type="button" class="tk-btn-secondary" id="pj-add-modal-cancel">Cancel</button>
-        <button type="submit" class="tk-btn-primary">Create project</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<style>
-  .projects-page-actions { display: flex; justify-content: flex-end; margin-bottom: 1rem; }
-
-  .pj-toolbar { margin-bottom: 1.25rem; }
-  .pj-tabs { display: inline-flex; gap: .25rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 4px; }
-  .pj-tab { border: none; background: transparent; padding: .5rem .9rem; border-radius: 8px; font-size: .875rem; color: #6b7280; cursor: pointer; }
-  .pj-tab.active { background: #eef2ff; color: #111827; font-weight: 600; }
-  .pj-count { background: #f3f4f6; color: #6b7280; border-radius: 999px; padding: 1px 7px; font-size: .75rem; margin-left: 4px; }
-  .pj-tab.active .pj-count { background: #e0e7ff; color: #4338ca; }
-
-  .pj-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
-  .pj-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; overflow: hidden; cursor: pointer;
-             transition: box-shadow .15s ease, transform .15s ease; }
-  .pj-card:hover { box-shadow: 0 8px 20px rgba(0,0,0,.08); transform: translateY(-2px); }
-
-  .pj-banner { height: 88px; padding: .9rem 1rem; display: flex; justify-content: space-between; align-items: flex-start; color: #fff; }
-  .pj-banner-icon { font-size: 1.1rem; opacity: .9; }
-  .pj-banner-0 { background: linear-gradient(135deg,#a78bfa,#818cf8); }
-  .pj-banner-1 { background: linear-gradient(135deg,#60a5fa,#3b82f6); }
-  .pj-banner-2 { background: linear-gradient(135deg,#34d399,#10b981); }
-  .pj-banner-3 { background: linear-gradient(135deg,#fbbf24,#f59e0b); }
-  .pj-banner-4 { background: linear-gradient(135deg,#f472b6,#ec4899); }
-  .pj-banner-5 { background: linear-gradient(135deg,#22d3ee,#06b6d4); }
-
-  .pj-status { font-size: .7rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgba(255,255,255,.25); color: #fff; }
-  .pj-status.s-active { background: rgba(255,255,255,.28); }
-  .pj-status.s-completed { background: rgba(255,255,255,.28); }
-  .pj-status.s-onhold { background: rgba(255,255,255,.28); }
-
-  .pj-body { padding: 1rem 1.1rem 1.1rem; }
-  .pj-title { font-weight: 700; font-size: 1.05rem; color: #111827; margin-bottom: .25rem; }
-  .pj-desc { font-size: .82rem; color: #6b7280; min-height: 1.2em; margin-bottom: .9rem;
-             display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-
-  .pj-progress { margin-bottom: .9rem; }
-  .pj-progress-label { font-size: .78rem; color: #6b7280; }
-  .pj-pct { float: right; font-size: .8rem; font-weight: 700; color: #4338ca; }
-  .pj-bar { background: #f1f2f6; border-radius: 999px; height: 6px; margin-top: 6px; overflow: hidden; }
-  .pj-bar-fill { background: linear-gradient(90deg,#6366f1,#818cf8); height: 100%; border-radius: 999px; }
-
-  .pj-footer { display: flex; justify-content: space-between; align-items: center; }
-  .pj-avatars { display: flex; }
-  .pj-avatar { width: 26px; height: 26px; border-radius: 50%; color: #fff; font-size: .68rem; font-weight: 700;
-               display: flex; align-items: center; justify-content: center; margin-left: -8px; border: 2px solid #fff; }
-  .pj-avatar:first-child { margin-left: 0; }
-  .pj-avatar.av0 { background: #818cf8; } .pj-avatar.av1 { background: #34d399; }
-  .pj-avatar.av2 { background: #f59e0b; } .pj-avatar.av3 { background: #f472b6; }
-  .pj-avatar.av4 { background: #22d3ee; } .pj-avatar.av5 { background: #a78bfa; }
-  .pj-avatar.pj-more { background: #e5e7eb; color: #6b7280; }
-  .pj-date { font-size: .78rem; color: #9ca3af; }
-
-  .pj-empty { text-align: center; padding: 3rem 1rem; color: #9ca3af; }
-
-  /* ===== Detail modal ===== */
-  .pj-modal-overlay { position: fixed; inset: 0; background: rgba(17,24,39,.5); display: flex;
-                       align-items: center; justify-content: center; z-index: 60; padding: 1rem; }
-  .pj-modal-overlay.hidden { display: none; }
-  .pj-modal { background: #fff; border-radius: 16px; width: 100%; max-width: 900px; max-height: 92vh;
-              overflow-y: auto; position: relative; padding: 2.25rem; }
-
-  @media (max-width: 640px) {
-    .pj-modal { max-width: 100%; max-height: 96vh; padding: 1.5rem; border-radius: 12px; }
-  }
-  .pj-modal-close { position: absolute; top: 1rem; right: 1rem; border: none; background: #f3f4f6; width: 30px; height: 30px;
-                     border-radius: 50%; font-size: 1.1rem; cursor: pointer; color: #6b7280; }
-
-  .pj-modal-layout { display: flex; gap: 1.5rem; }
-  .pj-modal-main { flex: 1; min-width: 0; }
-  .pj-modal-side { display: flex; flex-direction: column; gap: .6rem; border-left: 1px solid #f0f0f2; padding-left: 1.25rem; }
-  .pj-side-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; border: 1px solid #e5e7eb;
-                 background: #fff; border-radius: 10px; padding: .6rem .7rem; font-size: .95rem; cursor: pointer; color: #374151; width: 66px; }
-  .pj-side-btn span { font-size: .68rem; }
-  .pj-side-btn:hover { background: #f9fafb; }
-  .pj-side-btn-danger { color: #dc2626; }
-  .pj-side-btn-danger:hover { background: #fef2f2; border-color: #fecaca; }
-
-  .pj-modal-header h2 { margin: .3rem 0 .35rem; font-size: 1.3rem; color: #111827; }
-  .pj-d-desc { color: #6b7280; font-size: .9rem; margin: 0 0 1rem; }
-  .pj-d-meta { display: flex; gap: 1.75rem; font-size: .85rem; color: #374151; margin-bottom: 1rem; }
-  .pj-d-meta-label { display: block; color: #9ca3af; font-size: .72rem; text-transform: uppercase; letter-spacing: .03em; }
-  .pj-d-progress { margin-bottom: 1.25rem; }
-
-  .pj-d-section { margin-bottom: 1.25rem; }
-  .pj-d-section h3 { font-size: .85rem; text-transform: uppercase; letter-spacing: .03em; color: #9ca3af; margin: 0; }
-  .pj-d-section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .6rem; }
-  .pj-add-wi-btn { border: 1px dashed #c7d2fe; background: #eef2ff; color: #4338ca; border-radius: 8px;
-                   padding: .3rem .7rem; font-size: .75rem; font-weight: 600; cursor: pointer; }
-  .pj-add-wi-btn.hidden { display: none; }
-  .pj-add-wi-btn:hover { background: #e0e7ff; }
-
-  .pj-d-worklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .4rem; }
-  .pj-d-worklist li { display: flex; justify-content: space-between; align-items: center; padding: .55rem .75rem;
-                       background: #f9fafb; border-radius: 8px; font-size: .85rem; color: #374151; }
-  .pj-d-worklist .pj-wi-status { font-size: .7rem; padding: 2px 8px; border-radius: 999px; background: #e5e7eb; color: #4b5563; }
-  .pj-d-worklist .pj-wi-status.done { background: #d1fae5; color: #047857; }
-
-  .pj-edit-form { margin-top: 1.5rem; border-top: 1px solid #f0f0f2; padding-top: 1.25rem; display: flex; flex-direction: column; gap: .8rem; }
-  .pj-edit-form.hidden { display: none; }
-  .pj-edit-form label { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: #374151; }
-  .pj-edit-form input, .pj-edit-form textarea, .pj-edit-form select {
-    border: 1px solid #d1d5db; border-radius: 8px; padding: .5rem .6rem; font-size: .85rem; font-family: inherit;
-  }
-  .pj-edit-row { display: flex; gap: .8rem; }
-  .pj-edit-row label { flex: 1; }
-  .pj-edit-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: .3rem; }
-</style>
 
 <script>
-  // ---- Tab filtering ----
+
+  function icon(id) {
+  var NS = 'http://www.w3.org/2000/svg';
+  var s = document.createElementNS(NS, 'svg'); s.setAttribute('class', 'pd-ic');
+  var u = document.createElementNS(NS, 'use'); u.setAttribute('href', '#' + id);
+  s.appendChild(u); return s;
+}
+
+
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var pjData = {};
+  document.querySelectorAll('.pd-data').forEach(function (el) { pjData[el.dataset.projectId] = JSON.parse(el.textContent); });
+
+  // ---------- helpers ----------
+  // Safe element builder: text is never treated as HTML.
+  function el(tag, cls, text) { var n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+  // URLs from url_for end in "/0"; swap that 0 for the real id.
+  function withId(url, id) { return url.replace(/0$/, id); }
+  // URLs use two placeholder numbers: the work item id and a second id (comment / file / user).
+  function withWid(tpl, wi, id) { return tpl.replace('987654321', wi.id).replace('123456789', id); }
+  // Select the option matching the value (ignoring case); otherwise use the fallback.
+  function setSelect(sel, value, fallback) {
+    var want = String(value || '').toLowerCase(), found = false;
+    Array.prototype.forEach.call(sel.options, function (o) {
+      if (o.value.toLowerCase() === want) { sel.value = o.value; found = true; }
+    });
+    if (!found) sel.value = fallback;
+  }
+  // Round profile picture, or the person's initials when they have none.
+  function avatar(p, extra) {
+    var a = el('span', 'pd-avatar' + (extra ? ' ' + extra : '')); a.title = p.username;
+    if (p.picture) { var img = el('img'); img.src = p.picture; img.alt = p.username; a.appendChild(img); }
+    else a.textContent = (p.username || '?').slice(0, 2).toUpperCase();
+    return a;
+  }
+  function fmtDate(iso) { var d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }); }
+  function fmtSize(n) { if (n < 1024) return n + ' B'; if (n < 1048576) return Math.round(n / 1024) + ' KB'; return (n / 1048576).toFixed(1) + ' MB'; }
+
+  var detail = $('pd-detail'), drawer = $('wi-drawer'), cur = null, openWi = null;
+
+  // ---- Tabs ----
   document.querySelectorAll('.pj-tab').forEach(function (tab) {
     tab.addEventListener('click', function () {
       document.querySelectorAll('.pj-tab').forEach(function (t) { t.classList.remove('active'); });
       tab.classList.add('active');
-      var filter = tab.dataset.filter;
-      document.querySelectorAll('.pj-card').forEach(function (card) {
-        card.style.display = (filter === 'all' || card.dataset.status === filter) ? '' : 'none';
+      document.querySelectorAll('.pj-card').forEach(function (c) {
+        c.style.display = (tab.dataset.filter === 'all' || c.dataset.status === tab.dataset.filter) ? '' : 'none';
       });
     });
   });
 
-  // ---- Collect per-project data ----
-  var pjData = {};
-  document.querySelectorAll('.pj-data').forEach(function (el) {
-    pjData[el.dataset.projectId] = JSON.parse(el.textContent);
-  });
+  // ---- Simple modals ----
+  document.querySelectorAll('[data-open]').forEach(function (b) { b.addEventListener('click', function () { $(b.dataset.open).hidden = false; }); });
+  document.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', function () { $(b.dataset.close).hidden = true; }); });
+  $('add-project-modal').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
 
-  var modal = document.getElementById('pj-detail-modal');
-  var editForm = document.getElementById('pj-edit-form');
-  var deleteForm = document.getElementById('pj-d-delete-form');
-  var ownerActions = document.getElementById('pj-d-owner-actions');
-
-  function openDetail(pid) {
-    var d = pjData[pid];
-    if (!d) return;
-
-    document.getElementById('pj-d-status').textContent = d.status;
-    document.getElementById('pj-d-title').textContent = d.title;
-    document.getElementById('pj-d-desc').textContent = d.description || '';
-    document.getElementById('pj-d-start').textContent = d.start_date || '—';
-    document.getElementById('pj-d-deadline').textContent = d.deadline || '—';
-    document.getElementById('pj-d-progress-label').textContent = d.done + ' of ' + d.total + ' tasks';
-    document.getElementById('pj-d-bar-fill').style.width = d.percent + '%';
-    document.getElementById('pj-d-pct').textContent = d.percent + '%';
-
-    var avatarsEl = document.getElementById('pj-d-assignees');
-    avatarsEl.innerHTML = '';
-    (d.assignees || []).forEach(function (a, i) {
-      var el = document.createElement('div');
-      el.className = 'pj-avatar av' + (a.id % 6);
-      el.title = a.username || ('User #' + a.id);
-      el.textContent = (a.username ? a.username.slice(0, 2) : a.id).toString().toUpperCase();
-      avatarsEl.appendChild(el);
-    });
-    if (!d.assignees || d.assignees.length === 0) {
-      avatarsEl.innerHTML = '<span style="color:#9ca3af;font-size:.82rem;">No one assigned yet</span>';
-    }
-
-    var listEl = document.getElementById('pj-d-worklist');
-    listEl.innerHTML = '';
-    (d.work_items || []).forEach(function (wi) {
-      var li = document.createElement('li');
-      var done = (wi.status || '').toLowerCase() === 'completed';
-      li.innerHTML = '<span>' + (wi.title || 'Untitled task') + '</span>' +
-        '<span class="pj-wi-status' + (done ? ' done' : '') + '">' + (wi.status || 'Pending') + '</span>';
-      listEl.appendChild(li);
-    });
-    if (!d.work_items || d.work_items.length === 0) {
-      listEl.innerHTML = '<li style="justify-content:center;color:#9ca3af;">No work items yet</li>';
-    }
-
-    // owner-only side actions
-    ownerActions.style.display = d.is_owner ? 'flex' : 'none';
-    deleteForm.action = d.delete_url;
-
-    // "Add work item" - shown for owner or any non-visitor member
-    var addWiBtn = document.getElementById('pj-add-wi-btn');
-    var addWiForm = document.getElementById('pj-add-wi-form');
-    addWiBtn.classList.toggle('hidden', !d.can_add_workitem);
-    addWiForm.classList.add('hidden');
-    addWiForm.action = d.add_workitem_url;
-
-    // wire up edit form (hidden until Edit is clicked)
-    editForm.action = d.edit_url;
-    document.getElementById('pj-e-title').value = d.title || '';
-    document.getElementById('pj-e-des').value = d.description || '';
-    document.getElementById('pj-e-start').value = d.start_date || '';
-    document.getElementById('pj-e-deadline').value = d.deadline || '';
-    document.getElementById('pj-e-status').value = d.status || 'Active';
-    editForm.classList.add('hidden');
-
-    modal.classList.remove('hidden');
+  // ---- Drawer ----
+  function closeDrawer() {
+    openWi = null;
+    drawer.classList.remove('open'); drawer.setAttribute('aria-hidden', 'true');
+    document.querySelectorAll('.pd-wi').forEach(function (b) { b.classList.remove('active'); });
   }
 
-  document.querySelectorAll('.pj-card').forEach(function (card) {
-    card.addEventListener('click', function () {
-      openDetail(card.dataset.projectId);
+  function updateMulti() {
+    var n = document.querySelectorAll('#wi-multi-list input:checked').length;
+    $('wi-multi-summary').textContent = n ? n + ' selected' : 'Select assignees';
+  }
+
+  function renderAssignees(wi, canEdit) {
+    var nb = $('wi-new-assignees'), ml = $('wi-multi-list');
+    ml.innerHTML = ''; $('wi-multi').open = false;     // cleared, so old ticks are never submitted
+    nb.hidden = !!wi || !canEdit;
+    if (!wi && canEdit) {
+      [cur.owner].concat(cur.members).forEach(function (p) {
+        if (!p) return;
+        var row = el('label', 'pd-multi-row'), cb = el('input');
+        cb.type = 'checkbox'; cb.name = 'project_members'; cb.value = p.id;
+        row.appendChild(cb); row.appendChild(avatar(p)); row.appendChild(el('span', null, p.username));
+        ml.appendChild(row);
+      });
+      updateMulti();
+    }
+    var box = $('wi-assignees');
+    box.hidden = !wi;                       // existing items use the Assign / Remove section below
+    if (!wi) return;
+    var list = $('wi-assignee-list'); list.innerHTML = '';
+    wi.assignees.forEach(function (p) {
+      var row = el('div', 'pd-member');
+      var left = el('span', 'pd-person'); left.appendChild(avatar(p)); left.appendChild(el('span', null, p.username));
+      row.appendChild(left);
+      if (canEdit) {
+        var f = el('form'); f.method = 'POST';
+        f.action = withWid(cur.unassign_url, wi, p.id);
+        var b = el('button', 'pd-link-danger', 'Remove'); b.type = 'submit'; f.appendChild(b); row.appendChild(f);
+      }
+      list.appendChild(row);
     });
+    if (!wi.assignees.length) list.appendChild(el('span', 'pd-muted', 'No one assigned yet.'));
+
+    var taken = wi.assignees.map(function (p) { return p.id; });
+    var sel = $('wi-assign-select'); sel.innerHTML = '';
+    [cur.owner].concat(cur.members).forEach(function (p) {
+      if (p && taken.indexOf(p.id) === -1) { var o = el('option', null, p.username); o.value = p.id; sel.appendChild(o); }
+    });
+    $('wi-assign-form').hidden = !canEdit || !sel.options.length;
+    $('wi-assign-form').action = cur.assign_url.replace('987654321', wi.id);
+  }
+
+  function renderComments(wi) {
+    var box = $('wi-comments');
+    box.hidden = !wi;                               // a brand-new item has no comments yet
+    if (!wi) return;
+
+    var list = $('wi-comment-list'); list.innerHTML = '';
+    wi.comments.forEach(function (c) {
+      var item = el('div', 'pd-comment');
+      item.appendChild(avatar(c));
+
+      var body = el('div', 'pd-comment-body');
+      var head = el('div', 'pd-comment-head');
+      head.appendChild(el('strong', null, c.username));
+      head.appendChild(el('span', 'pd-muted', fmtDate(c.time)));
+      body.appendChild(head);
+
+      var text = el('p', 'pd-comment-text', c.text);   // plain text, never treated as HTML
+      body.appendChild(text);
+
+      // Edit and Delete are shown only on YOUR OWN comments
+      if (c.user_id === cur.current_user_id) {
+        var actions = el('div', 'pd-comment-actions');
+
+        var editBtn = el('button', 'pd-link', 'Edit'); editBtn.type = 'button';
+        actions.appendChild(editBtn);
+
+        var delForm = el('form'); delForm.method = 'POST';
+        delForm.action = withWid(cur.delete_comment_url, wi, c.id);
+        delForm.onsubmit = function () { return confirm('Delete this comment?'); };
+        var delBtn = el('button', 'pd-link-danger', 'Delete'); delBtn.type = 'submit';
+        delForm.appendChild(delBtn);
+        actions.appendChild(delForm);
+        body.appendChild(actions);
+
+        // inline edit form, hidden until Edit is clicked
+        var editForm = el('form', 'pd-comment-edit'); editForm.method = 'POST'; editForm.hidden = true;
+        editForm.action = withWid(cur.edit_comment_url, wi, c.id);
+        var ta = el('textarea'); ta.name = 'comment'; ta.rows = 3; ta.maxLength = 1000; ta.required = true; ta.value = c.text;
+        var row = el('div', 'pd-form-actions');
+        var cancel = el('button', 'pd-btn', 'Cancel'); cancel.type = 'button';
+        var save = el('button', 'pd-btn pd-btn-primary', 'Save'); save.type = 'submit';
+        row.appendChild(cancel); row.appendChild(save);
+        editForm.appendChild(ta); editForm.appendChild(row);
+        body.appendChild(editForm);
+
+        editBtn.addEventListener('click', function () {
+          text.hidden = true; actions.hidden = true; editForm.hidden = false; ta.focus();
+        });
+        cancel.addEventListener('click', function () {
+          editForm.hidden = true; text.hidden = false; actions.hidden = false; ta.value = c.text;
+        });
+      }
+
+      item.appendChild(body);
+      list.appendChild(item);
+    });
+    if (!wi.comments.length) list.appendChild(el('span', 'pd-muted', 'No comments yet.'));
+
+    $('wi-comment-form').action = withWid(cur.add_comment_url, wi, '');
+  }
+
+  function renderFiles(wi) {
+    var box = $('wi-files');
+    box.hidden = !wi;                                // a brand-new item has no files yet
+    if (!wi) return;
+
+    var list = $('wi-file-list'); list.innerHTML = '';
+    wi.files.forEach(function (f) {
+      var url = withWid(cur.file_url, wi, f.id);
+      var row = el('div', 'pd-file');
+
+      if (f.type.indexOf('image/') === 0) {
+        var thumb = el('img', 'pd-file-thumb'); thumb.src = url; thumb.alt = ''; thumb.loading = 'lazy';
+        row.appendChild(thumb);
+      } else {
+        row.appendChild(el('span', 'pd-file-icon', 'PDF'));
+      }
+
+      var info = el('div', 'pd-file-info');
+      var link = el('a', 'pd-file-name', f.name);   // plain text, never treated as HTML
+      link.href = url; link.target = '_blank'; link.rel = 'noopener noreferrer';
+      info.appendChild(link);
+      info.appendChild(el('span', 'pd-muted', f.username + ' \u00B7 ' + fmtSize(f.size) + ' \u00B7 ' + fmtDate(f.time)));
+      row.appendChild(info);
+
+      // Remove is shown only on files YOU attached
+      if (f.user_id === cur.current_user_id) {
+        var form = el('form'); form.method = 'POST';
+        form.action = withWid(cur.delete_file_url, wi, f.id);
+        form.onsubmit = function () { return confirm('Remove this file?'); };
+        var btn = el('button', 'pd-link-danger', 'Remove'); btn.type = 'submit';
+        form.appendChild(btn); row.appendChild(form);
+      }
+      list.appendChild(row);
+    });
+    if (!wi.files.length) list.appendChild(el('span', 'pd-muted', 'No files attached yet.'));
+
+    var up = $('wi-file-form');
+    up.hidden = !cur.can_attach_files;             // visitors do not get an upload box
+    up.action = withWid(cur.add_file_url, wi, '');
+    $('wi-file-input').value = '';
+  }
+
+  function openDrawer(wi, btn) {
+    document.querySelectorAll('.pd-wi').forEach(function (b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    openWi = wi || null;
+    var isNew = !wi, canEdit = cur.can_edit_workitems, f = $('wi-form');
+
+    $('wi-drawer-title').textContent = isNew ? 'New work item' : (canEdit ? 'Edit work item' : 'Work item');
+    f.action = isNew ? cur.add_workitem_url : withId(cur.edit_workitem_url, wi.id);
+    $('wi-title').value = wi ? wi.title : '';
+    $('wi-des').value = wi ? wi.description : '';
+    setSelect($('wi-priority'), wi && wi.priority, 'Medium');
+    setSelect($('wi-progress'), wi && wi.status, 'Not Started');
+    $('wi-start').value = wi ? wi.start_date : '';
+    $('wi-deadline').value = wi ? wi.deadline : '';
+    renderAssignees(wi, canEdit);
+    renderComments(wi);
+    renderFiles(wi);
+    $('wi-save').textContent = isNew ? 'Add work item' : 'Save changes';
+
+    // Visitors can read but not change.
+    f.querySelectorAll('input, textarea, select').forEach(function (i) { i.disabled = !canEdit; });
+    $('wi-save-row').hidden = !canEdit;
+
+    // Delete only appears when editing an existing item you are allowed to edit.
+    var del = $('wi-delete-form');
+    var wiEditable = !isNew && (cur.is_owner || wi.can_edit);
+    del.hidden = !wiEditable;
+    if (!isNew) del.action = withId(cur.delete_workitem_url, wi.id);
+
+    drawer.classList.add('open'); drawer.setAttribute('aria-hidden', 'false');
+  }
+  $('wi-close').addEventListener('click', closeDrawer);
+  $('wi-multi-list').addEventListener('change', updateMulti);
+  $('wi-new-btn').addEventListener('click', function () { openDrawer(null, null); });
+  $('wi-file-input').addEventListener('change', function () {
+    var f = this.files[0];
+    if (f && f.size > 5 * 1024 * 1024) { alert('That file is larger than 5 MB.'); this.value = ''; }
   });
 
-  document.getElementById('pj-modal-close').addEventListener('click', function () {
-    modal.classList.add('hidden');
-  });
-  modal.addEventListener('click', function (e) {
-    if (e.target === modal) modal.classList.add('hidden');
+  // ---- Project detail ----
+  function openDetail(pid) {
+    var d = pjData[pid]; if (!d) return; cur = d;
+    closeDrawer();
+
+    $('d-status').textContent = d.status;
+    $('d-title').textContent = d.title;
+    $('d-desc').textContent = d.description;
+    $('d-start').textContent = d.start_date || '-';
+    $('d-deadline').textContent = d.deadline || '-';
+    $('d-progress-label').textContent = d.done + ' of ' + d.total + ' tasks';
+    $('d-pct').textContent = d.percent + '%';
+    $('d-bar').style.width = d.percent + '%';
+
+    // GitHub link: shown to everyone, editable by the owner only
+    var repoView = $('d-repo-view'); repoView.innerHTML = '';
+    var m = /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)/.exec(d.github_url || '');
+    if (m) {
+      var card = el('a', 'pd-repo'); 
+      card.href = d.github_url; card.target = '_blank'; card.rel = 'noopener noreferrer';
+
+      var badge = el('span', 'pd-repo-badge'); badge.appendChild(icon('i-github'));
+      var info = el('span', 'pd-repo-info');
+      var name = el('span', 'pd-repo-name');
+      name.appendChild(el('span', 'pd-repo-owner', m[1] + ' / '));
+      name.appendChild(el('strong', null, m[2]));
+      info.appendChild(name);
+      info.appendChild(el('span', 'pd-muted', 'github.com'));
+
+      var go = el('span', 'pd-repo-go'); go.appendChild(icon('i-chevron'));
+
+      card.appendChild(badge); card.appendChild(info); card.appendChild(go);
+      repoView.appendChild(card);
+    } else {
+      repoView.appendChild(el('span', 'pd-muted', 'No repository linked yet.'));
+    }
+
+
+    $('d-repo-form').hidden = !d.is_owner;
+    $('d-repo-form').action = d.set_github_url;
+    $('d-repo-input').value = d.github_url || '';
+
+    // Owner-only controls
+    $('d-edit-btn').hidden = !d.is_owner;
+    $('d-member-btn').hidden = !d.is_owner;
+    $('d-delete-form').hidden = !d.is_owner;
+    $('d-delete-form').action = d.delete_url;
+    $('d-leave-form').action = d.leave_url;
+    $('d-leave-form').hidden = d.is_owner;          // owners never see Leave
+    $('d-edit-form').action = d.edit_url; $('d-edit-form').hidden = true;
+    $('e-title').value = d.title; $('e-des').value = d.description;
+    $('e-start').value = d.start_date; $('e-deadline').value = d.deadline; setSelect($('e-status'), d.status, 'Active');
+
+    // Members
+    var mEl = $('d-members'); mEl.innerHTML = '';
+    [Object.assign({}, d.owner, { role: 'owner' })].concat(d.members).forEach(function (m) {
+      var row = el('div', 'pd-member');
+      var left = el('span', 'pd-person'); left.appendChild(avatar(m)); left.appendChild(el('span', null, m.username)); left.appendChild(el('small', null, m.role));
+      row.appendChild(left);
+      if (d.is_owner && m.role !== 'owner') {
+        var f = el('form'); f.method = 'POST'; f.action = withId(d.remove_member_url, m.id);
+        f.onsubmit = function () { return confirm('Remove ' + m.username + ' from this project?'); };
+        var b = el('button', 'pd-link-danger', 'Remove'); b.type = 'submit'; f.appendChild(b); row.appendChild(f);
+      }
+      mEl.appendChild(row);
+    });
+    if (!d.members.length) mEl.appendChild(el('span', 'pd-muted', 'No members yet.'));
+    $('d-member-form').action = d.add_member_url; $('d-member-form').hidden = true;
+
+    // Work items
+    var list = $('d-worklist'); list.innerHTML = '';
+    d.work_items.forEach(function (wi) {
+      var b = el('button', 'pd-wi'); b.type = 'button';
+      b.appendChild(el('span', null, wi.title));
+      var right = el('span', 'pd-wi-right');
+
+      var stack = el('span', 'pd-avatars');
+
+      // Owner first, with a gold ring
+      if (wi.creator) {
+        var own = avatar(wi.creator, 'pd-avatar-owner');
+        own.title = 'Owner: ' + wi.creator.username;
+        stack.appendChild(own);
+      }
+
+      // Then assignees (skip the owner so they aren't shown twice)
+      var others = wi.assignees.filter(function (p) {
+        return !wi.creator || p.id !== wi.creator.id;
+      });
+      others.slice(0, 3).forEach(function (p) { stack.appendChild(avatar(p)); });
+      if (others.length > 3) stack.appendChild(el('span', 'pd-avatar pd-avatar-more', '+' + (others.length - 3)));
+
+      if (stack.childNodes.length) right.appendChild(stack);
+
+      if ((wi.priority || '').toLowerCase() === 'high') right.appendChild(el('span', 'pd-chip high', 'High'));
+      right.appendChild(el('span', 'pd-chip' + ((wi.status || '').toLowerCase() === 'completed' ? ' done' : ''), wi.status));
+      var arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg'); arrow.setAttribute('class', 'pd-ic');
+      arrow.innerHTML = '<use href="#i-chevron"/>'; right.appendChild(arrow);
+      b.appendChild(right);
+      b.addEventListener('click', function () { openDrawer(wi, b); });
+      list.appendChild(b);
+    });
+
+
+    if (!d.work_items.length) list.appendChild(el('span', 'pd-muted', 'No work items yet.'));
+    $('wi-new-btn').hidden = !d.can_edit_workitems;
+
+    detail.hidden = false;
+  }
+  document.querySelectorAll('.pj-card').forEach(function (c) {
+    c.addEventListener('click', function () { openDetail(c.dataset.projectId); });
+    c.addEventListener('keydown', function (e) { if (e.key === 'Enter') openDetail(c.dataset.projectId); });
   });
 
-  document.getElementById('pj-d-edit-btn').addEventListener('click', function () {
-    editForm.classList.toggle('hidden');
-  });
-  document.getElementById('pj-e-cancel').addEventListener('click', function () {
-    editForm.classList.add('hidden');
+  $('d-close').addEventListener('click', function () { detail.hidden = true; closeDrawer(); });
+  $('d-edit-btn').addEventListener('click', function () { $('d-edit-form').hidden = !$('d-edit-form').hidden; });
+  $('e-cancel').addEventListener('click', function () { $('d-edit-form').hidden = true; });
+  $('d-member-btn').addEventListener('click', function () { $('d-member-form').hidden = !$('d-member-form').hidden; });
+  $('m-cancel').addEventListener('click', function () { $('d-member-form').hidden = true; });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    if (drawer.classList.contains('open')) closeDrawer(); else if (!detail.hidden) detail.hidden = true;
   });
 
-  document.getElementById('pj-add-wi-btn').addEventListener('click', function () {
-    document.getElementById('pj-add-wi-form').classList.toggle('hidden');
-  });
-  document.getElementById('pj-wi-cancel').addEventListener('click', function () {
-    document.getElementById('pj-add-wi-form').classList.add('hidden');
+  // ---- Stay on the open project window after changes ----
+  // Any form inside the detail panel is submitted in the background; the page
+  // then reloads with ?open=<project id> (and &wi=<id> when a work item was
+  // open) and the same window is restored. Flash messages still appear
+  // because the reload is a normal GET after the POST.
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form.closest || !form.closest('#pd-detail')) return;  // only detail forms
+    if (!form.action || !cur) return;
+    e.preventDefault();
+    fetch(form.action, { method: 'POST', body: new FormData(form), redirect: 'manual' })
+      .then(function (r) {
+        if (r.type !== 'opaqueredirect' && !r.ok) { form.submit(); return; }  // 400/403/500: show the real error page
+        var dest = location.pathname + '?open=' + cur.id;
+        if (openWi && openWi.id) dest += '&wi=' + openWi.id;
+        location.href = dest;
+      })
+      .catch(function () { form.submit(); }); // network error: fall back to normal POST
   });
 
-  // ---- Add project modal ----
-  var addProjectModal = document.getElementById('add-project-modal');
-  document.getElementById('pj-add-modal-close').addEventListener('click', function () {
-    addProjectModal.classList.add('hidden');
-  });
-  document.getElementById('pj-add-modal-cancel').addEventListener('click', function () {
-    addProjectModal.classList.add('hidden');
-  });
-  addProjectModal.addEventListener('click', function (e) {
-    if (e.target === addProjectModal) addProjectModal.classList.add('hidden');
-  });
+  // Reopen the project window (and work item drawer) when arriving from a change
+  var params = new URLSearchParams(location.search);
+  var openId = params.get('open');
+  if (openId && pjData[openId]) {
+    openDetail(openId);
+    var wiId = params.get('wi');
+    if (wiId) {
+      var wi = pjData[openId].work_items.find(function (w) { return String(w.id) === wiId; });
+      if (wi) openDrawer(wi, null);
+    }
+    history.replaceState(null, '', location.pathname);   // tidy the URL
+  }
+})();
 </script>
 {% endblock %}

@@ -1,0 +1,124 @@
+{% extends "user/base.html" %}
+
+{% block title %}Jirflux — Tasks{% endblock %}
+{% block page_title %}My Tasks{% endblock %}
+{% block page_subtitle %}Everything assigned to you, across every project{% endblock %}
+
+{% block content %}
+<div class="task-page">
+
+  <div class="tk-panel">
+    <div class="tk-toolbar">
+      <div class="tk-tabs">
+        <button type="button" class="tk-tab active" data-filter="all">
+          All <span class="tk-count">{{ work_items | length }}</span>
+        </button>
+        <button type="button" class="tk-tab" data-filter="not-started">
+          Not Started <span class="tk-count">{{ work_items | selectattr('progress', 'equalto', 'Not Started') | list | length }}</span>
+        </button>
+        <button type="button" class="tk-tab" data-filter="in-progress">
+          In Progress <span class="tk-count">{{ work_items | selectattr('progress', 'equalto', 'In Progress') | list | length }}</span>
+        </button>
+        <button type="button" class="tk-tab" data-filter="completed">
+          Completed <span class="tk-count">{{ work_items | selectattr('progress', 'equalto', 'Completed') | list | length }}</span>
+        </button>
+      </div>
+
+      <div class="tk-search">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6"></circle>
+          <path d="M16 16L21 21"></path>
+        </svg>
+        <input type="text" id="task-search" placeholder="Search tasks...">
+      </div>
+    </div>
+
+    <div class="tk-list-wrap">
+      {% if work_items %}
+        <div class="tk-grid tk-list-head">
+          <div>Task</div>
+          <div>Priority</div>
+          <div>Status</div>
+          <div>Progress</div>
+          <div>Due</div>
+          <div>Assignees</div>
+        </div>
+
+        {% for item in work_items %}
+          {% set status_class = 'not-started' if item.progress == 'Not Started' else 'in-progress' if item.progress == 'In Progress' else 'completed' %}
+          {% set priority_class = item.priority | lower %}
+          {% set pct = 0 if item.progress == 'Not Started' else 50 if item.progress == 'In Progress' else 100 %}
+          {% set is_overdue = item.deadline and item.deadline < today and item.progress != 'Completed' %}
+
+          <div class="tk-row tk-grid" data-status="{{ status_class }}" data-title="{{ item.w_title | lower }}">
+            <div>
+              <div class="tk-task-title">{{ item.w_title }}</div>
+              <div class="tk-task-sub">
+                <span>{{ item.project.p_title if item.project else 'No project' }}</span>
+              </div>
+            </div>
+
+            <div><span class="tk-pill p-{{ priority_class }}">{{ item.priority }}</span></div>
+
+            <div><span class="tk-pill s-{{ status_class }}">{{ item.progress }}</span></div>
+
+            <div class="tk-progress">
+              <span class="tk-pct">{{ pct }}%</span>
+              <div class="tk-bar"><div class="tk-bar-fill" style="width: {{ pct }}%;"></div></div>
+            </div>
+
+            <div class="tk-due {{ 'overdue' if is_overdue else '' if item.deadline else 'none' }}">
+              {{ item.deadline.strftime('%b %d') if item.deadline else 'No due date' }}
+            </div>
+
+            <div class="tk-avatars">
+              {% for a in assignees_by_item.get(item.work_item_id, []) %}
+                {% if a.picture %}
+                  <img src="{{ url_for('static', filename=a.picture) }}"
+                      title="{{ a.full_name }}" class="tk-avatar-img">
+                {% else %}
+                  <div class="tk-avatar av{{ loop.index0 % 6 }}" title="{{ a.full_name }}">
+                    {{ (a.full_name or '?')[0] | upper }}
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="tk-empty">No tasks assigned to you yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<script>
+  (function () {
+    var tabs = document.querySelectorAll('.tk-tab');
+    var rows = document.querySelectorAll('.tk-row');
+    var searchInput = document.getElementById('task-search');
+    var activeFilter = 'all';
+
+    function applyFilters() {
+      var query = (searchInput.value || '').toLowerCase().trim();
+      rows.forEach(function (row) {
+        var matchesFilter = activeFilter === 'all' || row.dataset.status === activeFilter;
+        var matchesSearch = !query || row.dataset.title.indexOf(query) !== -1;
+        row.style.display = (matchesFilter && matchesSearch) ? '' : 'none';
+      });
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        tabs.forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        activeFilter = tab.dataset.filter;
+        applyFilters();
+      });
+    });
+
+    searchInput.addEventListener('input', applyFilters);
+  })();
+</script>
+{% endblock %}

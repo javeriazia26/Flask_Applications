@@ -1,0 +1,136 @@
+{% extends 'user/base.html' %}
+
+{% block title %}Jirflux — Team{% endblock %}
+{% block page_title %}Team{% endblock %}
+{% block page_subtitle %}Everyone connected to your team{% endblock %}
+
+{% block topbar_actions %}
+  <form class="header-inline-form" action="{{ url_for('connection.send_connection_request_by_username') }}" method="POST">
+    <input class="form-input" type="text" name="username" placeholder="Username" required maxlength="50" autocomplete="off">
+    <button class="btn-primary" type="submit">+ Add Member</button>
+  </form>
+{% endblock %}
+
+{% block content %}
+<div class="team-page">
+
+  <div class="team-stats">
+    <div class="stat-card team-member-card">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 19v-1a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v1"/><circle cx="10" cy="7" r="3.5"/><path d="M20 19v-1a4 4 0 0 0-3-3.87"/><path d="M16 4.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="stat-value">{{ team_count }}</div>
+      <div class="stat-label">Team Members</div>
+    </div>
+
+    <div class="stat-card team-request-card">
+      <div class="stat-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+      </div>
+      <div class="stat-value">{{ incoming_requests|length }}</div>
+      <div class="stat-label">Requests</div>
+
+      {% if incoming_requests %}
+        <div class="team-request-preview">
+          {% for request in incoming_requests[:2] %}
+            <span>{{ (request.sender.full_name or request.sender.username) | truncate(14, True) }}</span>
+          {% endfor %}
+        </div>
+        <button type="button" class="team-view-all-btn" data-modal-target="teamRequestModal">View all</button>
+      {% else %}
+        <div class="team-request-preview empty">No requests</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="team-list-wrap">
+    {% if team_members %}
+      {% for member in team_members %}
+        <div class="team-row">
+          <div>
+            <div class="team-name">{{ member.full_name or member.username }}</div>
+            <div class="team-bio">{{ member.bio or member.u_title or 'No bio yet' }}</div>
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <div class="team-empty">No team members yet — invite someone by username above.</div>
+    {% endif %}
+  </div>
+
+</div>
+
+<div class="team-request-modal" id="teamRequestModal" aria-hidden="true">
+  <div class="team-request-window">
+    <div class="team-request-header">
+      <h3>Friend Requests</h3>
+      <button type="button" class="team-request-close" aria-label="Close">&times;</button>
+    </div>
+
+    {% if incoming_requests %}
+      <div class="team-request-list">
+        {% for request in incoming_requests %}
+          <div class="team-request-item">
+            <div class="team-request-user">
+              <div class="team-avatar av{{ loop.index0 % 6 }}">
+                {{ (request.sender.full_name or request.sender.username)[0] | upper }}
+              </div>
+              <div>
+                <div class="team-name">{{ request.sender.full_name or request.sender.username }}</div>
+                <div class="team-bio">wants to connect with you</div>
+              </div>
+            </div>
+
+            <div class="team-row-actions">
+              <form action="{{ url_for('connection.accept_connection_request', user_id=request.sender_id) }}" method="POST">
+                <button class="btn-primary" type="submit">Accept</button>
+              </form>
+              <form action="{{ url_for('connection.reject_connection_request', user_id=request.sender_id) }}" method="POST">
+                <button class="btn-secondary" type="submit">Reject</button>
+              </form>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="team-empty modal-empty">No pending friend requests.</div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  (function () {
+    var modal = document.getElementById('teamRequestModal');
+    if (!modal) return;
+
+    var trigger = document.querySelector('[data-modal-target="teamRequestModal"]');
+    var closeBtn = modal.querySelector('.team-request-close');
+
+    function openModal() {
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeModal() {
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+
+    if (trigger) {
+      trigger.addEventListener('click', openModal);
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeModal);
+    }
+
+    modal.addEventListener('click', function (event) {
+      if (event.target === modal) closeModal();
+    });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && modal.classList.contains('show')) closeModal();
+    });
+  })();
+</script>
+{% endblock %}

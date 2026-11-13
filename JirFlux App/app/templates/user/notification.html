@@ -1,0 +1,174 @@
+{% extends "user/base.html" %}
+{% block title %}Jirflux — Notifications{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+{% block page_subtitle %}Stay updated on everything{% endblock %}
+
+{% block topbar_actions %}
+  <div class="header-inline-search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="5.5"/><path d="M16 16l4 4"/></svg>
+    <input type="text" id="nfSearch" placeholder="Search notifications...">
+  </div>
+  <a href="{{ url_for('notification.notifications') }}" class="nf-bell" title="Notifications">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+    {% if notifications and notifications|rejectattr('is_read')|list|length %}<span class="nf-badge">{{ notifications|rejectattr('is_read')|list|length }}</span>{% endif %}
+  </a>
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script src="{{ url_for('static', filename='js/notifications.js') }}"></script>
+{% endblock %}
+
+{% block content %}
+
+{% set unread = notifications|rejectattr('is_read')|list|length %}
+ 
+<div class="notif-page">
+ 
+  <div class="nf-panel">
+    <div class="nf-panel-head">
+      <div>
+        <h2>Notifications</h2>
+        <span class="nf-sub">{{ unread }} unread</span>
+      </div>
+      <form method="post" action="{{ url_for('notification.mark_all_read') }}">
+        <button type="submit" class="nf-btn-ghost">Mark all read</button>
+      </form>
+    </div>
+ 
+    <div class="nf-tabs">
+      <button type="button" class="nf-tab active" data-filter="all">All</button>
+      <button type="button" class="nf-tab" data-filter="unread">
+        Unread {% if unread %}<span class="nf-count">{{ unread }}</span>{% endif %}
+      </button>
+      <button type="button" class="nf-tab" data-filter="due_today">Due Today</button>
+      <button type="button" class="nf-tab" data-filter="mention">Mentions</button>
+      <button type="button" class="nf-tab" data-filter="system">System</button>
+    </div>
+ 
+    <div class="nf-list" id="nfList">
+      {% for n in notifications %}
+      <div class="nf-item {{ 'nf-unread' if not n.is_read }}"
+           data-read="{{ 0 if not n.is_read else 1 }}"
+           data-type="{{ n.notification_type or 'system' }}"
+           data-url="{{ url_for('notification.mark_read', notification_id=n.notification_id) }}"
+           data-search="{{ (n.n_title ~ ' ' ~ (n.n_des or ''))|lower }}">
+ 
+        <div class="nf-avatar av{{ loop.index0 % 6 }}">{{ n.n_title[:2]|upper }}</div>
+ 
+        <div class="nf-item-body">
+          <div class="nf-item-title">{{ n.n_title }}</div>
+          <div class="nf-item-desc">{{ n.n_des or '' }}</div>
+        </div>
+ 
+        <div class="nf-item-side">
+          <span class="nf-time" data-utc="{{ n.n_time.isoformat() }}Z"></span>
+          {% if not n.is_read %}<span class="nf-dot"></span>{% endif %}
+          <form method="post" class="nf-dismiss-form"
+                action="{{ url_for('notification.delete_notification', notification_id=n.notification_id) }}">
+            <button type="submit" class="nf-dismiss" title="Dismiss">&times;</button>
+          </form>
+        </div>
+      </div>
+      {% else %}
+      <div class="nf-empty">You're all caught up — no notifications yet.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+ 
+<script>
+(function () {
+  const items = document.querySelectorAll('.nf-item');
+  const tabs = document.querySelectorAll('.nf-tab');
+  const search = document.getElementById('nfSearch');
+ 
+  /* ---------- local time formatting ---------- */
+ 
+  function formatNotifTime(isoUtc) {
+    const d = new Date(isoUtc);
+    const now = new Date();
+ 
+    const isSameDay = d.toDateString() === now.toDateString();
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = d.toDateString() === yesterday.toDateString();
+ 
+    if (isSameDay) {
+      return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    }
+    if (isYesterday) {
+      return 'Yesterday';
+    }
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  }
+ 
+  function renderLocalTimes() {
+    document.querySelectorAll('.nf-time[data-utc]').forEach(function (el) {
+      el.textContent = formatNotifTime(el.dataset.utc);
+    });
+  }
+ 
+  /* ---------- tab filtering ---------- */
+ 
+  function applyFilter(filter) {
+    items.forEach(function (item) {
+      let show = true;
+      if (filter === 'unread') show = item.dataset.read === '0';
+      else if (filter !== 'all') show = item.dataset.type === filter;
+      item.style.display = show ? '' : 'none';
+    });
+  }
+ 
+  function initTabs() {
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        tabs.forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        applyFilter(tab.dataset.filter);
+      });
+    });
+  }
+ 
+  /* ---------- search ---------- */
+ 
+  function initSearch() {
+    search.addEventListener('input', function () {
+      const q = search.value.trim().toLowerCase();
+      items.forEach(function (item) {
+        item.style.display = item.dataset.search.includes(q) ? '' : 'none';
+      });
+    });
+  }
+ 
+  /* ---------- mark-as-read on click ---------- */
+ 
+  function markAsRead(item) {
+    fetch(item.dataset.url, { method: 'POST' }).then(function () {
+      item.dataset.read = '1';
+      item.classList.remove('nf-unread');
+      const dot = item.querySelector('.nf-dot');
+      if (dot) dot.remove();
+    });
+  }
+ 
+  function initItemClicks() {
+    items.forEach(function (item) {
+      item.addEventListener('click', function (e) {
+        if (e.target.closest('.nf-dismiss-form')) return;
+        if (item.dataset.read === '1') return;
+        markAsRead(item);
+      });
+    });
+  }
+ 
+  /* ---------- init ---------- */
+ 
+  renderLocalTimes();
+  initTabs();
+  initSearch();
+  initItemClicks();
+})();
+</script>
+{% endblock %}
+ 

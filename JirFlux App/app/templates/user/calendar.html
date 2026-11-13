@@ -1,0 +1,172 @@
+{% extends "user/base.html" %}
+
+{% block title %}Jirflux — Calendar{% endblock %}
+{% block page_title %}Calendar{% endblock %}
+{% block page_subtitle %}Your work items and deadlines at a glance{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/calendar.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="cal-card">
+  <div class="cal-head">
+    <h2 id="calTitle">Month</h2>
+    <div class="cal-nav">
+      <button type="button" id="prevBtn" class="nav-btn" aria-label="Previous month">&#8249;</button>
+      <button type="button" id="todayBtn" class="nav-btn today-btn">Today</button>
+      <button type="button" id="nextBtn" class="nav-btn" aria-label="Next month">&#8250;</button>
+    </div>
+  </div>
+
+  <div id="calError" class="cal-error" hidden></div>
+
+  <div class="cal-weekdays">
+    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span>
+    <span>Thu</span><span>Fri</span><span>Sat</span>
+  </div>
+  <div class="cal-grid" id="calGrid"></div>
+
+  <div class="cal-legend">
+    <span style="--p:var(--p-low)">Low</span>
+    <span style="--p:var(--p-medium)">Medium</span>
+    <span style="--p:var(--p-high)">High</span>
+    <span style="--p:var(--p-urgent)">Urgent</span>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var EVENTS_URL = "{{ url_for('calendar.calendar_events') }}";
+  var MAX_CHIPS = 3;
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function toISO(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parseISO(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text !== undefined) n.textContent = text;
+    return n;
+  }
+
+  var todayISO = toISO(new Date());
+  var now = new Date();
+  var viewY = now.getFullYear(), viewM = now.getMonth();
+  var items = [];
+  var expanded = {};   // dates whose "+N more" was clicked
+
+  var monthFmt = new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' });
+
+  function normalise(list) {
+    return list.map(function (e) {
+      var p = e.extendedProps || {};
+      var start = e.start.slice(0, 10);
+      var last = start;
+      if (e.end) {                        // end is exclusive
+        var d = parseISO(e.end.slice(0, 10));
+        d.setDate(d.getDate() - 1);
+        last = toISO(d);
+      }
+      if (last < start) last = start;
+      return {
+        title: e.title,
+        start: start,
+        last: last,
+        deadline: p.deadline || '',
+        status: p.status || 'Not Started',
+        priority: String(p.priority || 'Medium').toLowerCase(),
+        link: e.url || '#'
+      };
+    });
+  }
+
+  function isOverdue(t) {
+    return t.status !== 'Completed' && t.deadline && t.deadline < todayISO;
+  }
+
+  function tasksOn(iso) {
+    return items.filter(function (t) { return t.start <= iso && iso <= t.last; });
+  }
+
+  function renderGrid() {
+    document.getElementById('calTitle').textContent = monthFmt.format(new Date(viewY, viewM, 1));
+
+    var grid = document.getElementById('calGrid');
+    grid.textContent = '';
+
+    var firstDow = new Date(viewY, viewM, 1).getDay();
+    var daysInMonth = new Date(viewY, viewM + 1, 0).getDate();
+    var cells = Math.ceil((firstDow + daysInMonth) / 7) * 7;
+
+    for (var i = 0; i < cells; i++) {
+      var dayNum = i - firstDow + 1;
+
+      if (dayNum < 1 || dayNum > daysInMonth) {
+        grid.appendChild(el('div', 'cell cell-empty'));
+        continue;
+      }
+
+      var iso = viewY + '-' + pad(viewM + 1) + '-' + pad(dayNum);
+      var cell = el('div', 'cell');
+      if (iso === todayISO) cell.classList.add('is-today');
+      cell.appendChild(el('span', 'cell-num', dayNum));
+
+      var list = tasksOn(iso);
+      var limit = expanded[iso] ? list.length : MAX_CHIPS;
+      var chips = el('div', 'chips');
+
+      list.slice(0, limit).forEach(function (t) {
+        var chip = el('a', 'chip pr-' + t.priority + (t.status === 'Completed' ? ' is-done' : ''), t.title);
+        chip.href = t.link;
+        chip.title = t.title + ' - ' + (isOverdue(t) ? 'Overdue' : t.status) +
+                     (t.deadline ? ' (due ' + t.deadline + ')' : '');
+        chips.appendChild(chip);
+      });
+
+      if (list.length > MAX_CHIPS) {
+        var more = el('button', 'chip-more',
+          expanded[iso] ? 'Show less' : '+' + (list.length - MAX_CHIPS) + ' more');
+        more.type = 'button';
+        more.dataset.date = iso;
+        more.addEventListener('click', function () {
+          expanded[this.dataset.date] = !expanded[this.dataset.date];
+          renderGrid();
+        });
+        chips.appendChild(more);
+      }
+
+      cell.appendChild(chips);
+      grid.appendChild(cell);
+    }
+  }
+
+  function shiftMonth(n) {
+    var d = new Date(viewY, viewM + n, 1);
+    viewY = d.getFullYear(); viewM = d.getMonth();
+    renderGrid();
+  }
+  document.getElementById('prevBtn').addEventListener('click', function () { shiftMonth(-1); });
+  document.getElementById('nextBtn').addEventListener('click', function () { shiftMonth(1); });
+  document.getElementById('todayBtn').addEventListener('click', function () {
+    var t = new Date();
+    viewY = t.getFullYear(); viewM = t.getMonth();
+    renderGrid();
+  });
+
+  renderGrid();
+  fetch(EVENTS_URL, { credentials: 'same-origin' })
+    .then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function (list) { items = normalise(list); renderGrid(); })
+    .catch(function (err) {
+      console.error('Could not load calendar events:', err);
+      var box = document.getElementById('calError');
+      box.textContent = 'Could not load your tasks (' + err.message + '). Check /api/calendar_events.';
+      box.hidden = false;
+    });
+});
+</script>
+{% endblock %}

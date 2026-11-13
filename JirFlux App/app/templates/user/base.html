@@ -3,16 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}Dashboard{% endblock %}</title>
+  <title>{% block title %}Jirflux {% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='css/user.css') }}">
   {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body data-theme="{{ (user.theme if user is defined and user and user.theme else 'light') }}">
+  <script>
+    (function () {
+      try {
+        var savedTheme = localStorage.getItem('app-theme') || 'light';
+        document.body.setAttribute('data-theme', savedTheme);
+        document.documentElement.setAttribute('data-theme', savedTheme);
+      } catch (e) {}
+    })();
+  </script>
+
+  {% set signed_user = (user.full_name or user.username) if user is defined and user and (user.full_name or user.username) else 'User' %}
 
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">JF</div>
+      <img src="{{ url_for('static', filename='images/logo.png') }}" alt="JirFlux logo" class="brand-logo">
       <div>
         <div class="brand-name">JirFlux</div>
         <div class="brand-sub">Workspace</div>
@@ -22,53 +33,83 @@
     <nav>
       <div class="nav-section-label">MENU</div>
       <ul class="nav-list">
-        <li><a href="{{ url_for('dash.user_dash') }}" class="{{ 'active' if active_page == 'dashboard' else '' }}">Dashboard</a></li>
-        <li><a href="{{ url_for('dash.board') }}" class="{{ 'active' if active_page == 'board' else '' }}">Board</a></li>
-        <li><a href="#" class="{{ 'active' if active_page == 'calendar' else '' }}"> Calendar</a></li>
-        <li><a href="{{ url_for('project.project') }}" class="{{ 'active' if active_page == 'project' else '' }}"> Projects</a></li>
-        <li><a href="{{ url_for('team.team') }}" class="{{ 'active' if active_page == 'team' else '' }}">Team</a></li>
+        <li><a href="{{ url_for('dash.user_dash') }}" class="{{ 'active' if active_page == 'dashboard' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="4" rx="1.5"/><rect x="14" y="11" width="7" height="10" rx="1.5"/><rect x="3" y="12" width="7" height="9" rx="1.5"/></svg>
+          <span>Dashboard</span>
+        </a></li>
+        <li><a href="{{ url_for('dash.board') }}" class="{{ 'active' if active_page == 'board' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v11A2.5 2.5 0 0 1 17.5 20h-11A2.5 2.5 0 0 1 4 17.5v-11Z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+          <span>Board</span>
+        </a></li>
+        <li><a href="{{ url_for('calendar.user_calendar') }}" class="{{ 'active' if active_page == 'calendar' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M8 2.5v4M16 2.5v4M3 9.5h18"/></svg>
+          <span>Calendar</span>
+        </a></li>
+        <li><a href="{{ url_for('project.project') }}" class="{{ 'active' if active_page == 'project' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h4l2 2h7A2.5 2.5 0 0 1 21 9.5v7A2.5 2.5 0 0 1 18.5 19h-13A2.5 2.5 0 0 1 3 16.5v-9Z"/></svg>
+          <span>Projects</span>
+        </a></li>
+        <li><a href="{{ url_for('team.team') }}" class="{{ 'active' if active_page == 'team' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 19v-1a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v1"/><circle cx="10" cy="7" r="3.5"/><path d="M20 19v-1a4 4 0 0 0-3-3.87"/><path d="M16 4.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Team</span>
+        </a></li>
       </ul>
     </nav>
 
     <nav>
       <div class="nav-section-label">ACCOUNT</div>
       <ul class="nav-list">
-        <li><a href="{{ url_for('notification.notifications') }}" class="{{ 'active' if active_page == 'notification' else '' }}">Notification</a></li>
-        <li><a href="{{ url_for('connection.connection_requests') }}" class="{{ 'active' if active_page == 'connection' else '' }}"> Network</a></li>
-        <li><a href="{{ url_for('settings.settings') }}" class="{{ 'active' if active_page == 'setting' else '' }}"> Setting</a></li>
-        <li><a href="{{ url_for('profile.profile') }}" class="{{ 'active' if active_page == 'profile' else '' }}"> Profile</a></li>
+        <li><a href="{{ url_for('notification.notifications') }}" class="{{ 'active' if active_page == 'notification' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h5"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>
+          <span>Notification</span>
+        </a></li>
+        <li><a href="{{ url_for('task.task') }}" class="{{ 'active' if active_page == 'task' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4.5h6"/><path d="M7.5 6.5h9a2 2 0 0 1 2 2v8.5a2 2 0 0 1-2 2h-9a2 2 0 0 1-2-2V8.5a2 2 0 0 1 2-2Z"/><path d="M8.5 12.5l1.8 1.8 3.7-4.3"/></svg>
+          <span>Tasks</span>
+        </a></li>
+        <li><a href="{{ url_for('settings.settings') }}" class="{{ 'active' if active_page == 'setting' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .58 1.7 1.7 0 0 0-.4 1.06V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.4a1.7 1.7 0 0 0-1-.58 1.7 1.7 0 0 0-1.06.4l-.09.09a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.58-1 1.7 1.7 0 0 0-1.06-.4H2.9a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0 .58-1 1.7 1.7 0 0 0-.4-1.06l-.09-.09a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.58 1.7 1.7 0 0 0 .4-1.06V2.9a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.6a1.7 1.7 0 0 0 1 .58 1.7 1.7 0 0 0 1.06-.4l.09-.09a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9c.23.25.56.4.9.4h.09a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+          <span>Setting</span>
+        </a></li>
+        <li><a href="{{ url_for('profile.profile') }}" class="{{ 'active' if active_page == 'profile' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 19a7 7 0 0 1 14 0"/></svg>
+          <span>Profile</span>
+        </a></li>
       </ul>
     </nav>
 
     <nav>
       <ul class="nav-list">
-        <li><a href="{{ url_for('auth.logout') }}" class="{{ 'active' if active_page == 'logout' else '' }}"><span class="nav-icon">&#10148;</span> Logout</a></li>
+        <li><a href="{{ url_for('auth.logout') }}" class="{{ 'active' if active_page == 'logout' else '' }}">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          <span>Logout</span>
+        </a></li>
       </ul>
     </nav>
 
-    <div class="sidebar-footer">Signed in as {{ user.full_name or user.username if user is defined else "User" }}</div>
+    <div class="sidebar-footer">Signed in as {{ signed_user }}</div>
   </aside>
 
   <!-- Main content -->
   <main class="main">
 
     <div class="topbar">
-      <div>
+      <div class="topbar-copy">
         <h1>{% block page_title %}Dashboard{% endblock %}</h1>
-        <div class="subtitle">{% block page_subtitle %}Welcome back, {{ user.full_name or user.username if user is defined else "there" }}
-          {% endblock %}
-        </div>
+        {% set subtitle_text = self.page_subtitle() %}
+        {% if subtitle_text and subtitle_text.strip() %}
+        <div class="subtitle">{{ subtitle_text|trim }}</div>
+        {% endif %}
       </div>
       <div class="topbar-actions">
         {% block topbar_actions %}{% endblock %}
-        {% if user.picture %}
+        {% if user and user.picture %}
         <img class="profile-avatar" id="avatar-preview-view"
                 src="{{ url_for('static', filename=user.picture.replace('static/', '')) }}" alt="{{ user.username }}">
         {% else %}
-        <div class="avatar">{{ ((user.full_name or user.username)[0] | upper) if user is defined and (user.full_name or user.username) else "U" }}</div>
+        <div class="avatar">{{ signed_user[0] | upper if signed_user else 'U' }}</div>
         {% endif %}
       </div>
-    
     </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}

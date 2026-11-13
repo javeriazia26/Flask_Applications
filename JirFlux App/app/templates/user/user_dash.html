@@ -1,24 +1,19 @@
 {% extends "user/base.html" %}
 
-{% block title %}Dashboard{% endblock %}
+{% block title %}Jirflux — Dashboard{% endblock %}
 {% block page_title %}Dashboard{% endblock %}
 {% block page_subtitle %}Welcome back, {{ user.full_name or user.username if user is defined else "there" }}{% endblock %}
 
 {% block topbar_actions %}
-  <span class="team-invite-panel">
-      <form class="team-invite-form" action="{{ url_for('connection.send_connection_request_by_username') }}" method="POST">
-        <input class="form-input" type="text" name="username" placeholder="username" required maxlength="50" autocomplete="off">
-        <button class="btn-primary" type="submit">+ Add Member</button>
-      </form>
-  </span>
-{% endblock %}
-{% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+  <form class="header-inline-form" action="{{ url_for('connection.send_connection_request_by_username') }}" method="POST">
+    <input class="form-input" type="text" name="username" placeholder="Username" required maxlength="50" autocomplete="off">
+    <button class="btn-primary" type="submit">+ Add Member</button>
+  </form>
 {% endblock %}
 
 {% block content %}
 
-
+  <!-- ===================== STAT CARDS ===================== -->
   <div class="stat-grid">
     <div class="stat-card completed">
       <div class="stat-icon">&#10003;</div>
@@ -49,47 +44,58 @@
     </div>
   </div>
 
+
   <div class="dash-row">
 
+    <!-- ---------- Calendar panel ---------- -->
+
+    <!-- ---------- Project Activity panel ---------- -->
     <div class="panel">
       <div class="panel-header">
         <h2>Project Activity</h2>
-        <a href="#" class="panel-link">View all</a>
+        <a href="#" class="panel-link" id="al-open">View all</a>
+
       </div>
 
       {% if item_logs %}
-        <ul class="activity-list">
-          {% for log in item_logs %}
-            {% set action = (log.action or "")|lower %}
-            <li class="activity-item">
-              <span class="activity-icon
-                {% if 'complet' in action %}completed
-                {% elif 'creat' in action %}created
-                {% elif 'delet' in action or 'remov' in action %}deleted
-                {% else %}updated{% endif %}">
-                {% if 'complet' in action %}&#10003;
-                {% elif 'creat' in action %}&#43;
-                {% elif 'delet' in action or 'remov' in action %}&#10005;
-                {% else %}&#9998;{% endif %}
-              </span>
-              <div>
-                <div class="activity-text">
-                  <b>{{ log.username }}</b> {{ log.action }}
-                  <span style="color:#94A3B8;">in {{ log.project }}</span>
-                </div>
-                <div class="activity-meta">
-                  {{ log.date.strftime('%b %d') }} &middot; {{ log.time.strftime('%I:%M %p') }}
-                </div>
-              </div>
-            </li>
-          {% endfor %}
-        </ul>
+        <div class="table-wrap">
+          <table class="activity-table">
+            <thead>
+              <tr>
+                <th>Date &amp; Time</th>
+                <th>User</th>
+                <th>Work Title</th>
+                <th>Project</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for log in item_logs %}
+                {% set action = (log.action or "")|lower %}
+                <tr>
+                  <td class="col-datetime">
+                    {% if log.date %}{{ log.date.strftime('%b %d, %Y') }}{% endif %}
+                    {% if log.time %}<span class="muted">{{ log.time.strftime('%I:%M %p') }}</span>{% endif %}
+                  </td>
+                  <td><b>{{ log.username }}</b></td>
+                  <td>{{ log.w_title or "-" }}</td>
+                  <td>{{ log.project or "-" }}</td>
+                  <td>
+                    <span class="action-badge {% if 'complet' in action %}completed{% elif 'creat' in action %}created{% elif 'delet' in action or 'remov' in action %}deleted{% else %}updated{% endif %}">
+                      {{ log.action }}
+                    </span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
       {% else %}
         <div class="empty-state">No activity yet on your projects.</div>
       {% endif %}
     </div>
-
-    <div class="panel">
+    <!-- ---------- Calendar panel ---------- -->
+        <div class="panel">
       <div class="panel-header">
         <h2>Calendar</h2>
         <div class="cal-badges">
@@ -101,7 +107,75 @@
     </div>
 
   </div>
+  <!-- end .dash-row -->
+    {# ===== All activity window (same classes as the project window) ===== #}
+  <div id="al-window" class="pd-detail" hidden>
+    <div class="pd-detail-inner">
+      <div class="pd-detail-main">
 
+        <div class="pd-detail-top">
+          <h2 class="pd-h2">Project Activity</h2>
+          <button type="button" class="pd-icon-btn" id="al-close" aria-label="Close">&times;</button>
+        </div>
+        <p class="pd-muted pd-lead">Everything in projects you own or belong to</p>
+
+        {% if all_item_logs %}
+          <div class="table-wrap">
+            <table class="activity-table">
+              <thead>
+                <tr>
+                  <th>Date &amp; Time</th>
+                  <th>User</th>
+                  <th>Work Title</th>
+                  <th>Project</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for log in all_item_logs %}
+                  {% set action = (log.action or "")|lower %}
+                  <tr>
+                    <td class="col-datetime">
+                      {% if log.date %}{{ log.date.strftime('%b %d, %Y') }}{% endif %}
+                      {% if log.time %}<span class="muted">{{ log.time.strftime('%I:%M %p') }}</span>{% endif %}
+                    </td>
+                    <td><b>{{ log.username }}</b></td>
+                    <td>{{ log.w_title or "-" }}</td>
+                    <td>{{ log.project or "-" }}</td>
+                    <td>
+                      <span class="action-badge {% if 'complet' in action %}completed{% elif 'creat' in action %}created{% elif 'delet' in action or 'remov' in action %}deleted{% else %}updated{% endif %}">
+                        {{ log.action }}
+                      </span>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <div class="empty-state">No activity yet on your projects.</div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== ITEMS LOGS ===================== -->
+<script>
+  (function () {
+    var win = document.getElementById('al-window');
+    document.getElementById('al-open').addEventListener('click', function (e) {
+      e.preventDefault();
+      win.hidden = false;
+    });
+    document.getElementById('al-close').addEventListener('click', function () { win.hidden = true; });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') win.hidden = true;
+    });
+  })();
+</script>
+
+  <!-- ===================== MINI CALENDAR SCRIPT ===================== -->
   <script>
     (function () {
       var root = document.getElementById('mini-calendar');
