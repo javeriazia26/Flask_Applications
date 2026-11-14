@@ -5,7 +5,7 @@ from flask import (Blueprint, redirect, url_for, flash, session, request, abort,
 from sqlalchemy.exc import SQLAlchemyError
 from app import db
 from app.models import File, WorkItem, Project
-from app.routes.user.user import user_required
+from app.routes.user.user import log_action, user_required
 from app.routes.user.project_member import project_access, is_project_person
  
 attachment_bp = Blueprint('attachment', __name__)
@@ -129,6 +129,18 @@ def add_file(p_id, w_id):
             w_id=w_id,
         ))
         db.session.commit()
+        
+        log_action(
+            'attached file',
+            work_item.w_title,
+            project=proj.p_title,
+            p_id=p_id,
+            w_id=w_id,
+            user_id=session.get('user_id'),
+            username=session.get('username')
+        )
+
+        
     except SQLAlchemyError:
         db.session.rollback()
         try:
@@ -158,8 +170,20 @@ def download_file(p_id, w_id, f_id):
         abort(403)
  
     response = send_from_directory(upload_dir(), f.file_path,
-                                   mimetype=f.f_type, download_name=f.f_title)
+        mimetype=f.f_type, download_name=f.f_title)
     response.headers['X-Content-Type-Options'] = 'nosniff'
+    
+    log_action(
+            'downloaded file',
+            work_item.w_title,
+            project=proj.p_title,
+            p_id=p_id,
+            w_id=w_id,
+            user_id=session.get('user_id'),
+            username=session.get('username')
+        )
+
+    
     return response
  
  
@@ -182,8 +206,21 @@ def delete_file(p_id, w_id, f_id):
     stored = f.file_path
     db.session.delete(f)
     db.session.commit()
+    
+    log_action(
+            'removed file',
+            work_item.w_title,
+            project=proj.p_title,
+            p_id=p_id,
+            w_id=w_id,
+            user_id=session.get('user_id'),
+            username=session.get('username')
+        )
+
+    
     remove_stored_files([stored])
  
     flash("File removed.", "success")
     return redirect(url_for('project.project'))
+ 
  

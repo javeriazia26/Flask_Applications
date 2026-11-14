@@ -66,6 +66,17 @@ def assign_workitem(p_id, w_id):
     try:
         db.session.add(Assignee(w_id=w_id, u_id=target_id))
         db.session.commit()
+        
+        log_action(
+            'assigned',
+            work_item.w_title,
+            project=proj.p_title,
+            p_id=p_id,
+            w_id=w_id,
+            user_id=session.get('user_id'),
+            username=session.get('username')
+        )
+        
     except IntegrityError:
         db.session.rollback()
         flash("Could not assign that person.", "error")
@@ -102,6 +113,16 @@ def unassign_workitem(p_id, w_id, user_id):
     assignment = Assignee.query.filter_by(w_id=w_id, u_id=user_id).first_or_404()
     db.session.delete(assignment)
     db.session.commit()
+    
+    log_action(
+            'un-assigned',
+            work_item.w_title,
+            project=proj.p_title,
+            p_id=p_id,
+            w_id=w_id,
+            user_id=session.get('user_id'),
+            username=session.get('username')
+        )
 
     flash("Person unassigned.", "success")
     return redirect(url_for('project.project'))

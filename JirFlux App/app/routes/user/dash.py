@@ -1,13 +1,13 @@
 from sqlalchemy import or_, text
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, jsonify, request
+from flask import Blueprint, current_app, render_template, request, redirect, url_for, flash, session, jsonify, request
 from app import db
 from app.models import Assignee, AuditLog, Project, ProjectMember, User, WorkItem, ItemLog
 from datetime import date, datetime
 
 from app.routes.admin import audit_log
 from app.routes.admin.admin import admin_required
-from app.routes.user.user import user_required
+from app.routes.user.user import log_action, user_required
 
 
 dash_bp = Blueprint('dash', __name__)
@@ -104,9 +104,20 @@ def admin_dash():
 
 
 
+DB_TO_KEY = {db_value: key for key, db_value in STATUS_MAP.items()}
+
+
+def accessible_items_filter(uid):
+    """Items created by the user or assigned to them."""
+    assigned_ids = db.session.query(Assignee.w_id).filter(Assignee.u_id == uid)
+    return db.or_(
+        WorkItem.u_id == uid,
+        WorkItem.work_item_id.in_(assigned_ids),
+    )
+
+
 @dash_bp.route('/board')
 def board():
-    
     denied = user_required()
     if denied:
         return denied
@@ -114,16 +125,10 @@ def board():
     uid = session['user_id']
     user = User.query.filter_by(user_id=uid).first()
 
-    # ids of work items assigned to me
-    assigned_ids = db.session.query(Assignee.w_id).filter(Assignee.u_id == uid)
-    
     rows = (
         db.session.query(WorkItem, Project.p_title)
         .join(Project, Project.project_id == WorkItem.p_id)
-        .filter(db.or_(
-            WorkItem.u_id == uid,                    # created by me
-            WorkItem.work_item_id.in_(assigned_ids)  # assigned to me
-        ))
+        .filter(accessible_items_filter(uid))
         .order_by(WorkItem.deadline.asc().nulls_last())
         .all()
     )
@@ -147,21 +152,44 @@ def board():
 
 @dash_bp.route('/board/move', methods=['POST'])
 def board_move():
-    if "user_id" not in session:
+    uid = session.get("user_id")
+    if not uid:
         return jsonify(ok=False, error="Not logged in"), 401
 
     data = request.get_json(silent=True) or {}
+
     new_status = STATUS_MAP.get(data.get("status"))
     if not new_status:
         return jsonify(ok=False, error="Invalid status"), 400
 
-    # Filtering by u_id means users can only move their own items
-    item = WorkItem.query.filter_by(
-        work_item_id=data.get("item_id"), u_id=session['user_id']
+    try:
+        item_id = int(data.get("item_id"))
+    except (TypeError, ValueError):
+        return jsonify(ok=False, error="Invalid item_id"), 400
+
+    item = WorkItem.query.filter(
+        WorkItem.work_item_id == item_id,
+        accessible_items_filter(uid),
     ).first()
     if not item:
         return jsonify(ok=False, error="Item not found"), 404
 
-    item.progress = new_status
-    db.session.commit()
+    try:
+        item.progress = new_status
+        db.session.commit()
+        log_action(
+            'updated',
+            item.w_title,
+            project=item.project.p_title,
+            p_id=item.p_id,
+            w_id=item.work_item_id,
+            user_id=session.get('user_id'),
+            username=session.get('username')
+        )
+        
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("board_move commit failed")
+        return jsonify(ok=False, error="Database error"), 500
+
     return jsonify(ok=True)

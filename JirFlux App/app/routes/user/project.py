@@ -123,7 +123,6 @@ def _finalize_project_stats(projects, user_id):
         
     return projects
 
-# Paste this function into project.py, next to _attach_comments.
 def _attach_files(projects):
     """Give every work item its own 'files' list (oldest first)."""
     for p in projects.values():
@@ -160,7 +159,7 @@ def _attach_files(projects):
 
 from app.routes.user.validators import clean_github_url
 
-# Set or clear the project's GitHub repo link (owner only)
+
 @project_bp.route('/<int:p_id>/github', methods=['POST'])
 def set_github(p_id):
     denied = user_required()

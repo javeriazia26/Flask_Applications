@@ -3,7 +3,7 @@ from sqlalchemy import text
 from flask import Blueprint, redirect, url_for, flash, session, request, abort
 from app import db
 from app.models import Comment, WorkItem, Project
-from app.routes.user.user import user_required
+from app.routes.user.user import log_action, user_required
 from app.routes.user.project_member import is_project_person
 
 comment_bp = Blueprint('comment', __name__)
@@ -57,6 +57,16 @@ def add_comment(project_id, work_item_id):
 
     db.session.add(Comment(comment=body, w_id=work_item_id, u_id=session['user_id']))
     db.session.commit()
+    
+    log_action(
+            'added comment',
+            work_item.w_title,
+            project=proj.p_title,
+            p_id=project_id,
+            w_id=work_item_id,
+            user_id=session.get('user_id'),
+            username=session.get('username')
+        )
 
     flash("Comment posted.", "success")
     return redirect(url_for('project.project'))
@@ -68,6 +78,8 @@ def edit_comment(project_id, work_item_id, comment_id):
     denied = user_required()
     if denied:
         return denied
+    
+    work_item = WorkItem.query.get_or_404(work_item_id)
 
     proj, comment = _load_comment(project_id, work_item_id, comment_id)
 
@@ -83,6 +95,16 @@ def edit_comment(project_id, work_item_id, comment_id):
     comment.comment = body
     db.session.commit()
 
+    log_action(
+            'updated comment',
+            work_item.w_title,
+            project=proj.p_title,
+            p_id=project_id,
+            w_id=work_item_id,
+            user_id=session.get('user_id'),
+            username=session.get('username')
+        )
+
     flash("Comment updated.", "success")
     return redirect(url_for('project.project'))
 
@@ -93,6 +115,8 @@ def delete_comment(project_id, work_item_id, comment_id):
     denied = user_required()
     if denied:
         return denied
+    
+    work_item = WorkItem.query.get_or_404(work_item_id)
 
     proj, comment = _load_comment(project_id, work_item_id, comment_id)
 
@@ -102,6 +126,16 @@ def delete_comment(project_id, work_item_id, comment_id):
 
     db.session.delete(comment)
     db.session.commit()
+
+    log_action(
+            'deleted comment',
+            work_item.w_title,
+            project=proj.p_title,
+            p_id=project_id,
+            w_id=work_item_id,
+            user_id=session.get('user_id'),
+            username=session.get('username')
+        )
 
     flash("Comment deleted.", "success")
     return redirect(url_for('project.project'))
