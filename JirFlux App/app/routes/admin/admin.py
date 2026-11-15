@@ -39,3 +39,4 @@ def audit_log_action(action, entity, user_id=None, username=None):
         # if logging fails, don't crash the whole app
         db.session.rollback()
         print(f"Audit log error: {e}")
+

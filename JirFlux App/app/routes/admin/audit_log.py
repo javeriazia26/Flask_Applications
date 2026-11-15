@@ -1,5 +1,5 @@
-from flask import Blueprint, render_template
-from app.models import AuditLog
+from flask import Blueprint, render_template, session
+from app.models import AuditLog, User
 from app.routes.admin.admin import admin_required
 
 audit_log_bp = Blueprint('audit_log', __name__)
@@ -10,5 +10,6 @@ def audit_log():
     if denied:
         return denied
 
+    user = User.query.get(session['user_id'])
     logs = AuditLog.query.order_by(AuditLog.date.desc(), AuditLog.time.desc()).all()
-    return render_template('admin/audit_log.html', audit_logs=logs)
+    return render_template('admin/audit_log.html', audit_logs=logs, user=user, active_page='audit_log')

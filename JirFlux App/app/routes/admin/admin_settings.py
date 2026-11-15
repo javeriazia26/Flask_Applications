@@ -1,15 +1,18 @@
 from datetime import datetime, timedelta
 import secrets
 from flask import (Blueprint, render_template, redirect, url_for, flash, session, request)
+from app.routes.auth.set_pass import SetPasswordForm
+from app.routes.auth.set_pass import SetPasswordForm
+from app.routes.user.notification import create_notification
 from app.services.authenticator_service import (generate_secret,encrypt_secret,decrypt_secret,generate_provisioning_uri,verify_code)
-
+from werkzeug.security import generate_password_hash
 import qrcode
 import io
 import base64
 
 from app import db
 from app.models import User, OTP
-from app.routes.admin.admin import admin_required
+from app.routes.admin.admin import admin_required, audit_log_action
 
 
 admin_settings_bp = Blueprint('admin_settings', __name__)
@@ -38,6 +41,62 @@ def admin_settings():
         "admin/admin_settings.html",
         user=user, active_tab=active_tab
     )
+
+
+# =========================================================
+# SET PASSWORD
+# =========================================================
+@admin_settings_bp.route('/admin/settings/set-password', methods=['GET', 'POST'])
+def admin_set_password():
+    denied = admin_required()
+
+    if denied:
+        return denied
+
+    user = User.query.get(session["user_id"])
+
+    if not user:
+        flash("User account not found.", "error")
+        return redirect(url_for("admin_settings.admin_settings"))
+
+    form = SetPasswordForm()
+
+    if form.validate_on_submit():
+
+        password = form.password.data
+        confirm_password = form.confirm_password.data
+
+        if password != confirm_password:
+            flash("Passwords do not match.", "error")
+            return render_template("admin/admin_set_password.html", form=form)
+
+        if user.pass_hash:
+            flash("You already have a password.", "info")
+            return redirect(url_for("admin_settings.admin_settings"))
+
+        user.pass_hash = generate_password_hash(password)
+
+        db.session.commit()
+
+        audit_log_action(
+            "set-password",
+            "credential",
+            user_id=user.user_id,
+            username=user.username
+        )
+
+        create_notification(
+            user_id=user.user_id,
+            title="Password Set Successfully",
+            message="A password has been added to your JIRFLUX account.",
+            notification_type="security"
+        )
+
+        flash("New password has been set successfully.", "success")
+        return redirect(url_for("admin_settings.admin_settings"))
+
+    return render_template("admin/admin_set_password.html", form=form)
+
 
 
 # =========================================================
@@ -100,7 +159,8 @@ def admin_setup_2fa():
     return render_template(
         "admin/admin_setup_2fa.html",
         qr_code=qr_code,
-        email=user.email_id
+        email=user.email_id,
+        user=user
     )   
 # =========================================================
 # VERIFY 2FA
