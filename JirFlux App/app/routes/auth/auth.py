@@ -6,7 +6,7 @@ from urllib import response
 from flask import Blueprint, render_template, redirect, request, url_for, flash, session
 from app import db
 from app.models import User, TrustedDevice
-from app.routes.auth.forget_pass import ForgetPasswordForm
+from app.routes.auth.set_pass import EmailForm
 from app.routes.auth.reg_form import RegistrationForm
 from app.routes.auth.login_form import loginForm
 from app.routes.admin.admin import audit_log_action
@@ -20,6 +20,9 @@ from app.services.otp_service import send_resend_otp
 
 auth_bp = Blueprint('auth', __name__)
 
+@auth_bp.route('/')
+def index():
+    return render_template('auth/index.html')
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 def register():
@@ -49,6 +52,8 @@ def register():
 
         db.session.add(user)
         db.session.commit()
+        
+        session['pending_user_id'] = user.user_id
 
         message, category = send_resend_otp(user.user_id, purpose="email-verification")
         audit_log_action("register", "credential", user_id=user.user_id, username=username)
@@ -63,7 +68,6 @@ def register():
         if category == "warning":
             flash(message, category)
 
-        session['pending_user_id'] = user.user_id
 
         flash("Registered Successfully", "success")
         return redirect(url_for('verify.verify'))
@@ -71,10 +75,9 @@ def register():
     return render_template('auth/register.html', form=form)
 
 
-@auth_bp.route('/', methods=['GET', 'POST'])
+@auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     form = loginForm()
-    print("ALL COOKIES ON THIS REQUEST:", dict(request.cookies))
 
     now = datetime.utcnow()
 
@@ -181,7 +184,7 @@ def login():
                     
                     session['pending_user_id'] = user.user_id
 
-                    # message, category = send_alert_email(user.email_id)
+                    message, category = send_alert_email(user.email_id)
 
                     audit_log_action("unauthorized-device-login", "credential", user_id=user.user_id, username=user.username)
                     audit_log_action("sent-alert-email", "email", user_id=user.user_id, username=user.username)
@@ -232,13 +235,10 @@ def login():
             else:
                 session['user_id'] = user.user_id
                 session['username'] = user.username
-                # message, category = send_alert_email(user.email_id)
+
                 
                 if not trusted_device:
-                    cookie_name = f"device_token_{user.user_id}"
-                    device_token = secrets.token_urlsafe(32)
-                    # Store only the hash in the database
-                    device_token_hash = hash_data(device_token)
+                    message, category = send_alert_email(user.email_id)
                     audit_log_action("unauthorized-device-login", "credential", user_id=user.user_id, username=user.username)
                     audit_log_action("sent-alert-email", "email", user_id=user.user_id, username=user.username)
                     create_notification(
@@ -254,14 +254,16 @@ def login():
                     else:
                         response = redirect(url_for("dash.user_dash"))
 
-                    response.set_cookie(
-                        cookie_name,
-                        device_token,
-                        httponly=True,
-                        secure=False,
-                        samesite="Lax",
-                        max_age=60 * 60 * 24 * 30,
-                    )
+                    if device_token:
+                        response.set_cookie(
+                            cookie_name,
+                            device_token,
+                            httponly=True,
+                            secure=request.is_secure,
+                            samesite="Lax",
+                            max_age=60 * 60 * 24 * 30,
+                        )
+
 
                     return response
 
@@ -288,6 +290,8 @@ def login():
     return render_template("auth/login.html", form=form)
 
 
+
+
 @auth_bp.route('/logout')
 def logout():
     user_id = session.get('user_id')
@@ -304,7 +308,7 @@ def logout():
 
 @auth_bp.route("/forgot-password", methods=["GET", "POST"])
 def forgot_password():
-    form = ForgetPasswordForm()
+    form = EmailForm()
     
     if form.validate_on_submit():
         submitted_email = form.email.data

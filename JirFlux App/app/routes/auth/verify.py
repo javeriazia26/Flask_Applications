@@ -3,10 +3,11 @@ from datetime import datetime
 import secrets
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from werkzeug.security import generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db
 from app.models import User, OTP, TrustedDevice
+from app.routes.auth.set_pass import SetPasswordForm
 from app.routes.user.notification import create_notification
 from app.routes.admin.admin import audit_log_action
 from app.services.encryption_service import hash_data
@@ -22,7 +23,7 @@ def verify():
         flash("No pending verification found.", "error")
         return redirect(url_for("auth.login"))
 
-    user = User.query.filter_by(email_id=session["pending_email"]).first()
+    user = User.query.filter_by(user_id=session["pending_user_id"]).first()
 
     if request.method == "POST":
         otp = request.form.get("otp")
@@ -202,8 +203,10 @@ def verify_reset_otp():
 
 
 # Reset Password
+# Reset Password
 @verify_bp.route("/verify/reset_password", methods=["GET", "POST"])
 def reset_password():
+
     if "reset_user_id" not in session:
         flash("No pending password reset found.", "error")
         return redirect(url_for("auth.forgot_password"))
@@ -211,16 +214,17 @@ def reset_password():
     if "allow_password_reset" not in session:
         flash("Please verify the OTP first.", "error")
         return redirect(url_for("verify.verify_reset_otp"))
-    
-    
 
-    if request.method == "POST":
-        password = request.form.get("password")
-        confirm_password = request.form.get("confirm_password")
+    form = SetPasswordForm()
+
+    if form.validate_on_submit():
+
+        password = form.password.data
+        confirm_password = form.confirm_password.data
 
         if password != confirm_password:
             flash("Passwords do not match.", "error")
-            return redirect(url_for("verify.reset_password"))
+            return render_template("auth/reset_pass.html", form=form)
 
         user = db.session.get(
             User,
@@ -228,12 +232,15 @@ def reset_password():
         )
 
         if not user:
-            flash(
-                "Unable to reset password. Please start again.",
-                "error"
-            )
+            flash("Unable to reset password. Please start again.", "error")
             session.pop("reset_user_id", None)
+            session.pop("allow_password_reset", None)
             return redirect(url_for("auth.forgot_password"))
+
+        # Prevent reusing the current password
+        if user.pass_hash and check_password_hash(user.pass_hash, password):
+            flash("You cannot reuse your current password.", "error")
+            return render_template("auth/reset_pass.html", form=form)
 
         user.pass_hash = generate_password_hash(password)
 
@@ -242,22 +249,25 @@ def reset_password():
         session.pop("reset_user_id", None)
         session.pop("allow_password_reset", None)
 
-        flash(
-            "Password reset successful. Please log in.",
-            "success"
-        )
         create_notification(
-                user_id=user.user_id,
-                title="Password Reset",
-                message="Your password has been reset successfully.",
-                notification_type="security"
-            )
-        audit_log_action("password-reset", "credential", user_id=user.user_id, username=user.username)
+            user_id=user.user_id,
+            title="Password Reset",
+            message="Your password has been reset successfully.",
+            notification_type="security"
+        )
+
+        audit_log_action(
+            "password-reset",
+            "credential",
+            user_id=user.user_id,
+            username=user.username
+        )
+
+        flash("Password reset successful. Please log in.", "success")
 
         return redirect(url_for("auth.login"))
 
-    return render_template("auth/reset_pass.html")
-
+    return render_template("auth/reset_pass.html", form=form)
 
 #device verification
 @verify_bp.route("/verify/device", methods=["GET", "POST"])
@@ -268,13 +278,13 @@ def verify_device():
 
     user = db.session.get(User, session["pending_user_id"])
     
+    if not user:
+        flash("User not found.", "error")
+        session.pop("pending_user_id", None)
+        return redirect(url_for("auth.login"))
+    
     if request.method == "POST":
         otp = request.form.get("otp")
-
-        if not user:
-            flash("User not found.", "error")
-            session.pop("pending_user_id", None)
-            return redirect(url_for("auth.login"))
 
         message, category = verify_otp(
             user.user_id,
