@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.vscode/
+.DS_Store
+
+# Local runtime data
+instance/uploads/
+app/static/pictures/
+
+instance/
+*.db
+*.sqlite
+*.sqlite3
+*.pem
+*.key
+*.dump
+*.log
+app/static/pictures/
+app/static/pictures/
