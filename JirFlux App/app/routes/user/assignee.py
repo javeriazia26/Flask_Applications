@@ -5,6 +5,7 @@ from flask import Blueprint, redirect, url_for, flash, session, request, abort
 from sqlalchemy.exc import IntegrityError
 from app import db
 from app.models import ProjectMember, WorkItem, Project, Assignee
+from app.routes.user import user
 from app.routes.user.notification import create_notification
 from app.routes.user.project_member import project_access, is_project_person
 from app.routes.user.user import log_action, user_required
@@ -13,13 +14,15 @@ from app.routes.user.user import log_action, user_required
 assignee_bp = Blueprint('assignee', __name__)
 
 
-def picture_url(picture):
-    if not picture:
-        return None
-    return url_for('static', filename=picture.replace('static/', ''))
+def avatar_url(picture):
+    """Return a usable /avatar/... link, or None so the page shows initials."""
+    return picture if picture and picture.startswith("/avatar/") else None
+
 
 def get_assignees(w_id):
     """Return a list of assignees for a given work item."""
+    
+    
     assignee_query = text("""
         SELECT w.p_id, a.w_id, u.user_id, u.username, u.picture
         FROM assignees a
@@ -127,6 +130,7 @@ def unassign_workitem(p_id, w_id, user_id):
     flash("Person unassigned.", "success")
     return redirect(url_for('project.project'))
 
+
 def _attach_assignees(projects):
     """Give every work item its 'assignees' list and its 'creator'."""
     for p in projects.values():
@@ -153,7 +157,7 @@ def _attach_assignees(projects):
         if wi is not None:
             wi['assignees'].append({
                 'id': r.user_id, 'username': r.username,
-                'picture': picture_url(r.picture)})
+                'picture': avatar_url(r.picture)})
 
     # 2) Creators: one per work item, with or without assignees
     rows = db.session.execute(text("""
@@ -169,6 +173,6 @@ def _attach_assignees(projects):
         if wi is not None:
             wi['creator'] = {
                 'id': r.user_id, 'username': r.username,
-                'picture': picture_url(r.picture)}
+                'picture': avatar_url(r.picture)}
 
     return projects

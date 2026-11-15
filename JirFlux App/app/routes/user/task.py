@@ -6,6 +6,7 @@ from sqlalchemy import text, bindparam, or_
 
 from app import db
 import app.models
+from app.routes.user.project import avatar_url
 from app.routes.user.user import user_required
 
 task_bp = Blueprint('task', __name__)
@@ -66,12 +67,12 @@ def task():
     if ids:
         rows = db.session.execute(
             text("""
-                SELECT a.w_id, u.user_id, u.full_name, u.picture
+                SELECT a.w_id, u.user_id, u.full_name, u.picture as picture
                 FROM assignees a
                 JOIN users u ON u.user_id = a.u_id
                 WHERE a.w_id IN :ids
             """).bindparams(bindparam("ids", expanding=True)),
-            {"ids": ids}
+            {"ids": ids, 'picture': avatar_url(user.picture)}
         ).mappings().all()
         for r in rows:
             assignees_by_item.setdefault(r["w_id"], []).append(r)

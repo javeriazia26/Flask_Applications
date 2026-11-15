@@ -152,7 +152,7 @@ def _attach_files(projects):
                 'time': r.f_upload_time.isoformat() + 'Z',
                 'user_id': r.user_id,
                 'username': r.username,
-                'picture': _picture_url(r.picture),
+                'picture': avatar_url(r.picture),
             })
     return projects
 
@@ -279,11 +279,9 @@ def remove_member(p_id, user_id):
     flash("Member removed.", "success")
     return redirect(url_for('project.project'))
 
-def _picture_url(picture):
-    if not picture:
-        return None
-    return url_for('static', filename=picture.replace('static/', ''))
-
+def avatar_url(picture):
+    """Return a usable /avatar/... link, or None so the page shows initials."""
+    return picture if picture and picture.startswith("/avatar/") else None
 
 def _attach_members(projects):
     """Add the owner and the accepted members to each project dict."""
@@ -300,7 +298,7 @@ def _attach_members(projects):
         WHERE p.project_id = ANY(:ids)
     """), {"ids": ids}).fetchall():
         projects[r.project_id]['owner'] = {
-            'id': r.user_id, 'username': r.username, 'picture': _picture_url(r.picture)}
+            'id': r.user_id, 'username': r.username, 'picture': avatar_url(r.picture)}
 
     for r in db.session.execute(text("""
         SELECT pm.p_id, pm.user_id, pm.role, u.username, u.picture
@@ -310,7 +308,7 @@ def _attach_members(projects):
     """), {"ids": ids}).fetchall():
         projects[r.p_id]['members'].append({
             'id': r.user_id, 'username': r.username, 'role': r.role,
-            'picture': _picture_url(r.picture)})
+            'picture': avatar_url(r.picture)})
     return projects
 
 def get_user_projects(user_id):
@@ -480,7 +478,7 @@ def leave_project(p_id):
             Assignee.u_id == me, Assignee.w_id.in_(item_ids)
         ).delete(synchronize_session=False)
 
-    WorkItem.query.filter_by(p_id=p_id, u_id=me).update({'u_id': Project.u_id})  # Reassign their work items to the project owner
+    WorkItem.query.filter_by(p_id=p_id, u_id=me).update({'u_id': project.u_id})  # Reassign their work items to the project owner
     
     db.session.delete(member)
     db.session.commit()

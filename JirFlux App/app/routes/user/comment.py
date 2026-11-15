@@ -140,10 +140,9 @@ def delete_comment(project_id, work_item_id, comment_id):
     flash("Comment deleted.", "success")
     return redirect(url_for('project.project'))
 
-def _picture_url(picture):
-    if not picture:
-        return None
-    return url_for('static', filename=picture.replace('static/', ''))
+def avatar_url(picture):
+    """Return a usable /avatar/... link, or None so the page shows initials."""
+    return picture if picture and picture.startswith("/avatar/") else None
 
 
 def attach_comments(projects):
@@ -171,7 +170,7 @@ def attach_comments(projects):
                 'id': r.comment_id,
                 'user_id': r.u_id,
                 'username': r.username,
-                'picture': _picture_url(r.picture),
+                'picture': avatar_url(r.picture),
                 'text': r.comment,
                 'time': r.c_upload_time.strftime('%Y-%m-%dT%H:%M:%S')})
     return projects
