@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="JirFlux is a project workspace for planning, assigning and tracking work, with owner, member and visitor roles on every project.">
+  <title>JirFlux</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-check" viewBox="0 0 20 20"><path d="M4 10.5l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-grid" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1.5"/><rect x="11" y="3" width="6" height="6" rx="1.5"/><rect x="3" y="11" width="6" height="6" rx="1.5"/><rect x="11" y="11" width="6" height="6" rx="1.5"/></g></symbol>
+    <symbol id="i-board" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><rect x="3" y="3" width="4" height="14" rx="1.2"/><rect x="8.5" y="3" width="4" height="9" rx="1.2"/><rect x="14" y="3" width="3" height="11" rx="1.2"/></g></symbol>
+    <symbol id="i-cal" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="14" height="12" rx="2"/><path d="M3 8.5h14M7 3v3M13 3v3"/></g></symbol>
+    <symbol id="i-folder" viewBox="0 0 20 20"><path d="M3 6.5A1.5 1.5 0 014.5 5h3l1.5 2h6.5A1.5 1.5 0 0117 8.5v6a1.5 1.5 0 01-1.5 1.5h-11A1.5 1.5 0 013 14.5v-8z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-users" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="7" r="3"/><path d="M2.5 16c.5-3 2.7-4.5 5.5-4.5s5 1.5 5.5 4.5"/><path d="M13.5 4.3a3 3 0 010 5.4M15 11.8c1.5.5 2.3 1.8 2.5 4"/></g></symbol>
+    <symbol id="i-bell" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 14V9a5 5 0 0110 0v5l1.5 1.5h-13L5 14z"/><path d="M8.5 17.5h3"/></g></symbol>
+    <symbol id="i-list" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M8 5.5h9M8 10h9M8 14.5h9"/><path d="M3.5 5.5l1 1 1.7-2M3.5 10l1 1 1.7-2M3.5 14.5l1 1 1.7-2"/></g></symbol>
+    <symbol id="i-gear" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="2.6"/><path d="M10 2.5v2M10 15.5v2M2.5 10h2M15.5 10h2M4.7 4.7l1.4 1.4M13.9 13.9l1.4 1.4M4.7 15.3l1.4-1.4M13.9 6.1l1.4-1.4"/></g></symbol>
+    <symbol id="i-chart" viewBox="0 0 20 20"><g fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 3.5v13h13"/><path d="M7 12.5l3-3.5 2.5 2 4-5"/></g></symbol>
+  </svg>
+
+  <header class="site-header">
+    <div class="wrap nav">
+
+      <a class="brand" href="#top" aria-label="JirFlux home">
+       <img class="auth-logo" src="{{ url_for('static', filename='images/image.png') }}" alt="JirFlux logo">
+      </a>
+      <nav class="nav-links" aria-label="Main">
+        <a href="#board">Board</a>
+        <a href="#projects">Projects</a>
+        <a href="#access">Roles and access</a>
+        <a href="#more">Features</a>
+      </nav>
+      <div class="nav-actions">
+        <a class ="button" href="{{ url_for('auth.login') }}">Sign In</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- ================= Hero ================= -->
+    <div class="hero">
+      <div class="wrap">
+        <h1>Plan, assign and track work with the right access.</h1>
+        <p class="lead">
+          JirFlux brings projects, work items and teams into one workspace, and gives every project
+          its own owner, members and visitors so people only do what their role allows.
+        </p>
+        <div class="actions">
+          <a class="button" href="{{ url_for('auth.register') }}">Get started</a>
+          <a class="button ghost" href="#access">See how roles work</a>
+        </div>
+      </div>
+
+      <div class="hero-stage">
+        <div class="wrap">
+          <div class="app" role="img" aria-label="The JirFlux dashboard showing task totals, recent project activity and a calendar">
+            <div class="chrome"><i></i><i></i><i></i></div>
+            <div class="app-body">
+              <aside class="app-side">
+                <div class="brand"><span class="mark">JF</span><span class="brand-text"><strong>JirFlux</strong><span>Workspace</span></span></div>
+                <p class="side-label">Menu</p>
+                <div class="side-item active"><svg><use href="#i-grid"/></svg>Dashboard</div>
+                <div class="side-item"><svg><use href="#i-board"/></svg>Board</div>
+                <div class="side-item"><svg><use href="#i-cal"/></svg>Calendar</div>
+                <div class="side-item"><svg><use href="#i-folder"/></svg>Projects</div>
+                <div class="side-item"><svg><use href="#i-users"/></svg>Team</div>
+                <p class="side-label">Account</p>
+                <div class="side-item"><svg><use href="#i-bell"/></svg>Notifications</div>
+                <div class="side-item"><svg><use href="#i-list"/></svg>Tasks</div>
+                <div class="side-item"><svg><use href="#i-gear"/></svg>Settings</div>
+              </aside>
+              <div class="app-main">
+                <div class="app-head">
+                  <div><p class="app-title">Dashboard</p><p class="app-sub">Welcome back, Ayesha</p></div>
+                  <span class="avatar lg a5">A</span>
+                </div>
+                <div class="stats">
+                  <div class="stat s-ok"><b>18</b><span>Completed</span><small>64% rate</small></div>
+                  <div class="stat s-progress"><b>6</b><span>In progress</span><small>Active now</small></div>
+                  <div class="stat s-idle"><b>9</b><span>Not started</span><small>Queued</small></div>
+                  <div class="stat s-bad"><b>2</b><span>Overdue</span><small>Need attention</small></div>
+                </div>
+                <div class="dash-grid">
+                  <div class="panel panel-pad">
+                    <p class="panel-title" style="margin-bottom:10px">Project activity</p>
+                    <table>
+                      <thead><tr><th>When</th><th>User</th><th>Work item</th><th>Action</th></tr></thead>
+                      <tbody>
+                        <tr><td>Nov 13<small>10:42 AM</small></td><td>Ayesha K.</td><td>Design onboarding flow<small>Website Redesign</small></td><td><span class="chip warn">edited</span></td></tr>
+                        <tr><td>Nov 13<small>9:15 AM</small></td><td>Daniel R.</td><td>Set up CI pipeline<small>Mobile App v2</small></td><td><span class="chip info">created</span></td></tr>
+                        <tr><td>Nov 12<small>4:30 PM</small></td><td>Sana M.</td><td>Write API documentation<small>Customer Portal</small></td><td><span class="chip warn">edited</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="panel panel-pad cal">
+                    <div class="cal-head"><p class="panel-title">Calendar</p><span class="chip bad">2 overdue</span></div>
+                    <p class="app-sub" style="margin-bottom:8px">November 2026</p>
+                    <div class="cal-grid">
+                      <span class="dow">S</span><span class="dow">M</span><span class="dow">T</span><span class="dow">W</span><span class="dow">T</span><span class="dow">F</span><span class="dow">S</span>
+                      <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span>
+                      <span>8</span><span>9</span><span>10</span><span>11</span><span>12</span><span class="today">13</span><span>14</span>
+                      <span>15</span><span>16</span><span>17</span><span>18</span><span>19</span><span>20</span><span>21</span>
+                      <span>22</span><span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= Capability strip ================= -->
+    <div class="strip">
+      <div class="wrap">
+        <ul>
+          <li><strong>Role-based access</strong><span>Owner, member and visitor roles on every project</span></li>
+          <li><strong>Visual board</strong><span>Drag work items between status columns</span></li>
+          <li><strong>Clear ownership</strong><span>Assign people, set priority and track progress</span></li>
+          <li><strong>Stay informed</strong><span>Notifications and an activity feed for the team</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ================= Board ================= -->
+    <section id="board">
+      <div class="wrap row">
+        <div class="row-copy">
+          <h2>See the state of every task at a glance.</h2>
+          <p class="section-lead">Move work forward by dragging cards across the board. Status updates everywhere else in the workspace.</p>
+          <ul class="points">
+            <li><svg><use href="#i-check"/></svg><span><b>Three clear stages.</b> Not Started, In Progress and Completed keep the flow simple.</span></li>
+            <li><svg><use href="#i-check"/></svg><span><b>Context on every card.</b> Priority, project, due date and assignees show without opening anything.</span></li>
+          </ul>
+        </div>
+        <div class="app" role="img" aria-label="The JirFlux board with work items in three status columns">
+          <div class="app-main">
+            <div class="app-head"><div><p class="app-title">Board</p><p class="app-sub">Drag cards between columns to update status</p></div></div>
+            <div class="board">
+              <div>
+                <p class="col-head"><i style="background:var(--dot-idle)"></i>Not Started<b>4</b></p>
+                <div class="card c-idle"><strong>Draft release notes</strong><div class="meta"><span class="proj">Mobile App v2</span><span class="chip warn">Medium</span></div><div class="meta"><span class="due">Due Nov 24</span><span class="avatar a2">D</span></div></div>
+                <div class="card c-idle"><strong>Audit user permissions</strong><div class="meta"><span class="proj">Customer Portal</span><span class="chip bad">High</span></div><div class="meta"><span class="due">Due Nov 27</span><span class="avatar a3">S</span></div></div>
+              </div>
+              <div>
+                <p class="col-head"><i style="background:var(--dot-progress)"></i>In Progress<b>3</b></p>
+                <div class="card c-progress"><strong>Design onboarding flow</strong><div class="meta"><span class="proj">Website Redesign</span><span class="chip bad">High</span></div><div class="meta"><span class="due">Due Nov 18</span><span class="stack"><span class="avatar a1">A</span><span class="avatar a2">D</span></span></div></div>
+                <div class="card c-progress lift"><strong>Set up CI pipeline</strong><div class="meta"><span class="proj">Mobile App v2</span><span class="chip warn">Medium</span></div><div class="meta"><span class="due">Due Nov 20</span><span class="avatar a2">D</span></div></div>
+              </div>
+              <div>
+                <p class="col-head"><i style="background:var(--dot-done)"></i>Completed<b>6</b></p>
+                <div class="card c-done"><strong>Write API documentation</strong><div class="meta"><span class="proj">Customer Portal</span><span class="chip idle">Low</span></div><div class="meta"><span class="due">Done Nov 12</span><span class="avatar a3">S</span></div></div>
+                <div class="card c-done"><strong>Review pricing page copy</strong><div class="meta"><span class="proj">Q4 Launch</span><span class="chip warn">Medium</span></div><div class="meta"><span class="due">Done Nov 10</span><span class="avatar a1">A</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Projects ================= -->
+    <section id="projects" class="tint">
+      <div class="wrap row flip">
+        <div class="app" role="img" aria-label="A project page showing progress, a list of work items and the details and comments for one item">
+          <div class="app-main">
+            <div class="proj-head">
+              <div class="top"><h4>Website Redesign</h4><span class="chip ok">Active</span></div>
+              <div class="bar"><i style="width:62%"></i></div>
+              <small>8 of 13 work items complete, due Dec 18</small>
+            </div>
+            <div class="detail">
+              <div>
+                <div class="wi"><span>Create sitemap</span><span class="chip ok">Completed</span></div>
+                <div class="wi"><span>Write homepage copy</span><span class="chip ok">Completed</span></div>
+                <div class="wi sel"><span>Design onboarding flow</span><span class="chip warn">In Progress</span></div>
+                <div class="wi"><span>Build pricing page</span><span class="chip idle">Not Started</span></div>
+                <div class="wi"><span>Accessibility review</span><span class="chip idle">Not Started</span></div>
+              </div>
+              <div class="panel panel-pad">
+                <div class="field-row">
+                  <div class="field"><label>Priority</label><div>High</div></div>
+                  <div class="field"><label>Progress</label><div>In Progress</div></div>
+                  <div class="field"><label>Start date</label><div>11/09/2026</div></div>
+                  <div class="field"><label>End date</label><div>11/18/2026</div></div>
+                </div>
+                <p class="panel-title">Assignees</p>
+                <p style="margin:6px 0 0"><span class="stack"><span class="avatar lg a1">A</span><span class="avatar lg a2">D</span></span></p>
+                <div class="cmt"><span class="avatar a2">D</span><p><b>Daniel R.</b>Wireframes are ready for review.</p></div>
+                <div class="cmt"><span class="avatar a1">A</span><p><b>Ayesha K.</b>Thanks, I'll go through them today.</p></div>
+                <div class="compose">Write a comment</div>
+                <span class="post">Post comment</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row-copy">
+          <h2>Break projects into work people can own.</h2>
+          <p class="section-lead">Every project keeps its progress, deadline and members together, with each work item one click away.</p>
+          <ul class="points">
+            <li><svg><use href="#i-check"/></svg><span><b>Detail where it counts.</b> Priority, dates, assignees and comments live on the work item itself.</span></li>
+            <li><svg><use href="#i-check"/></svg><span><b>Progress you can trust.</b> Project status and completion update as work items change.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Access ================= -->
+    <section id="access">
+      <div class="wrap access-grid">
+        <div>
+          <h2>Roles belong to the project, not the person.</h2>
+          <p class="section-lead">
+            Someone can own one project, contribute to another and only follow a third. JirFlux checks
+            their role in that project before every action, instead of relying on one global admin and user split.
+          </p>
+          <p class="section-lead">Pick a role to see what it can do.</p>
+        </div>
+        <div class="roles">
+          <fieldset>
+            <legend>Role in this project</legend>
+            <div class="segmented">
+              <label><input type="radio" name="role" value="owner" checked><span>Owner</span></label>
+              <label><input type="radio" name="role" value="member"><span>Member</span></label>
+              <label><input type="radio" name="role" value="visitor"><span>Visitor</span></label>
+            </div>
+          </fieldset>
+          <p class="role-summary" id="role-summary" aria-live="polite">Runs the project: manages its details and who is part of it.</p>
+          <ul id="perms">
+            <li class="perm" data-roles="owner member visitor"><span>View the project and its work items</span><span class="state">Allowed</span></li>
+            <li class="perm" data-roles="owner member"><span>Add, update and delete work items</span><span class="state">Allowed</span></li>
+            <li class="perm" data-roles="owner"><span>Edit or delete the project</span><span class="state">Allowed</span></li>
+            <li class="perm" data-roles="owner"><span>Add members and visitors</span><span class="state">Allowed</span></li>
+            <li class="perm off" data-roles="member visitor"><span>Leave the project</span><span class="state">Not allowed</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Notifications ================= -->
+    <section class="tint">
+      <div class="wrap row">
+        <div class="row-copy">
+          <h2>Know what changed without asking.</h2>
+          <p class="section-lead">Notifications and the activity feed tell the team when work is created or updated, so nobody has to chase status.</p>
+          <ul class="points">
+            <li><svg><use href="#i-check"/></svg><span><b>Filter the noise.</b> Switch between unread, due today, mentions and system updates.</span></li>
+            <li><svg><use href="#i-check"/></svg><span><b>Clear the queue.</b> Mark everything as read in one click.</span></li>
+          </ul>
+        </div>
+        <div class="app" role="img" aria-label="The notifications page with filters and a list of recent work item updates">
+          <div class="app-main">
+            <div class="app-head"><div><p class="app-title">Notifications</p><p class="app-sub">3 unread</p></div><span class="chip idle">Mark all read</span></div>
+            <div class="panel panel-pad">
+              <div class="tabs"><span class="on">All</span><span>Unread</span><span>Due today</span><span>Mentions</span><span>System</span></div>
+              <div class="note"><span class="avatar lg a1">AK</span><div><b>Work item updated</b><span>"Design onboarding flow" was updated by Ayesha K.</span></div><time>10:42 AM</time><i class="dot"></i></div>
+              <div class="note"><span class="avatar lg a2">DR</span><div><b>Work item created</b><span>"Set up CI pipeline" was created by Daniel R.</span></div><time>9:15 AM</time><i class="dot"></i></div>
+              <div class="note"><span class="avatar lg a3">SM</span><div><b>Work item updated</b><span>"Write API documentation" was updated by Sana M.</span></div><time>Yesterday</time><i class="dot"></i></div>
+              <div class="note"><span class="avatar lg a4">OP</span><div><b>Added to a project</b><span>You were added to "Customer Portal" as a member.</span></div><time>Yesterday</time><i class="dot read"></i></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= More features ================= -->
+    <section id="more">
+      <div class="wrap">
+        <div class="centered">
+          <h2>Everything your team needs, in one place.</h2>
+          <p class="section-lead">The rest of the workspace is built to stay out of the way.</p>
+        </div>
+        <div class="grid">
+          <article class="tile"><div class="icon"><svg><use href="#i-grid"/></svg></div><h3>Dashboard</h3><p>Completed, in-progress, not-started and overdue counts, plus recent activity and a calendar.</p></article>
+          <article class="tile"><div class="icon"><svg><use href="#i-list"/></svg></div><h3>My tasks</h3><p>Everything assigned to you across every project, filtered by status and searchable.</p></article>
+          <article class="tile"><div class="icon"><svg><use href="#i-users"/></svg></div><h3>Team</h3><p>Add people by username and see everyone you work with in one list.</p></article>
+          <article class="tile"><div class="icon"><svg><use href="#i-folder"/></svg></div><h3>Projects</h3><p>Active, completed or on hold, each with its own progress, members and deadline.</p></article>
+          <article class="tile"><div class="icon"><svg><use href="#i-cal"/></svg></div><h3>Calendar</h3><p>Keep deadlines visible and spot overdue work before it slips further.</p></article>
+          <article class="tile"><div class="icon"><svg><use href="#i-gear"/></svg></div><h3>Settings and profile</h3><p>Manage personal details, security and notification preferences.</p></article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= Closing ================= -->
+    <div class="closing">
+      <div class="wrap">
+        <div class="closing-inner">
+          <div>
+            <h2>Bring your team's work into one workspace.</h2>
+          </div>
+          <a class="button light" href="{{ url_for('auth.login') }}">Get started</a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <div class="foot-grid">
+        <div>
+          <a class="brand" href="#top"><span class="mark" aria-hidden="true">JF</span><span class="brand-text"><strong>JirFlux</strong><span>Workspace</span></span></a>
+          <p class="blurb">Project management with role-based access on every project.</p>
+        </div>
+        <div>
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#board">Board</a></li>
+            <li><a href="#projects">Projects</a></li>
+            <li><a href="#access">Roles and access</a></li>
+            <li><a href="#more">Features</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Account</h4>
+          <ul>
+            <li><a href="{{ url_for('auth.login') }}">Sign in</a></li>
+            <li><a href="{{ url_for('auth.login') }}">Get started</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Roadmap</h4>
+          <ul>
+            <li>File attachments</li>
+            <li>OAuth sign-in</li>
+            <li>Interface refinements</li>
+          </ul>
+        </div>
+      </div>
+      <div class="foot-base">
+        <p>&copy; 2026 JirFlux. All rights reserved.</p>
+        <p>Built with Flask and PostgreSQL</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var summaries = {
+        owner: "Runs the project: manages its details and who is part of it.",
+        member: "Does the work: manages work items and can leave when finished.",
+        visitor: "Follows along: can view the project and can leave at any time."
+      };
+      var items = document.querySelectorAll("#perms .perm");
+      var summary = document.getElementById("role-summary");
+      var radios = document.querySelectorAll('input[name="role"]');
+
+      function apply(role) {
+        summary.textContent = summaries[role];
+        items.forEach(function (li) {
+          var allowed = li.getAttribute("data-roles").split(" ").indexOf(role) !== -1;
+          li.classList.toggle("off", !allowed);
+          li.querySelector(".state").textContent = allowed ? "Allowed" : "Not allowed";
+        });
+      }
+
+      radios.forEach(function (r) {
+        r.addEventListener("change", function () { if (r.checked) apply(r.value); });
+      });
+      apply("owner");
+    })();
+  </script>
+</body>
+</html>
