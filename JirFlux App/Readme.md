@@ -156,7 +156,6 @@ JirFlux/
     │   └── user/               # dashboard, project, workitem, assignee,
     │                           # comment, attachment, task, profile, avatar,
     │                           # notification, connection
-    ├── utils/                  # shared helpers
     ├── templates/              # auth/, admin/, user/, shared/
     └── static/                 # css, js, images
 ```
