@@ -34,75 +34,88 @@
     {{ column('completed',   'Completed',   '#10B981', completed_items) }}
   </div>
 
-  <style>
-    .board-card[draggable="true"] { cursor: grab; }
-    .board-card.dragging { opacity: .5; }
-    .board-column-body { min-height: 80px; }
-    .board-column-body.drag-over { outline: 2px dashed #9CA3AF; outline-offset: -4px; }
-  </style>
-
-  <script>
+<script>
+  (() => {
+    const MOVE_URL = "{{ url_for('dash.board_move') }}";
     let dragged = null;
 
-    function refreshColumn(body) {
+    const updateColumn = (body) => {
       const count = body.querySelectorAll('.board-card').length;
       body.parentElement.querySelector('.board-count').textContent = count;
-      let empty = body.querySelector('.board-empty');
+
+      const empty = body.querySelector('.board-empty');
       if (count === 0 && !empty) {
-        empty = document.createElement('div');
-        empty.className = 'board-empty';
-        empty.textContent = 'Nothing here';
-        body.appendChild(empty);
+        const el = document.createElement('div');
+        el.className = 'board-empty';
+        el.textContent = 'Nothing here';
+        body.appendChild(el);
       } else if (count > 0 && empty) {
         empty.remove();
       }
-    }
+    };
+
+    const placeCard = (card, from, to) => {
+      to.appendChild(card);
+      card.classList.toggle('board-card-done', to.dataset.status === 'completed');
+      updateColumn(from);
+      updateColumn(to);
+    };
+
+    const saveMove = async (itemId, status) => {
+      const res = await fetch(MOVE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_id: Number(itemId), status })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    };
 
     document.querySelectorAll('.board-card').forEach(card => {
-      card.addEventListener('dragstart', () => {
+      card.addEventListener('dragstart', e => {
         dragged = card;
+        e.dataTransfer.setData('text/plain', card.dataset.id); // required by Firefox
+        e.dataTransfer.effectAllowed = 'move';
         card.classList.add('dragging');
       });
-      card.addEventListener('dragend', () => card.classList.remove('dragging'));
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        dragged = null;
+      });
     });
 
-    document.querySelectorAll('.board-column-body').forEach(body => {
-      body.addEventListener('dragover', e => {
-        e.preventDefault();
+    document.querySelectorAll('.board-column').forEach(col => {
+      const body = col.querySelector('.board-column-body');
+
+      col.addEventListener('dragover', e => {
+        e.preventDefault(); // required, otherwise drop never fires
+        e.dataTransfer.dropEffect = 'move';
         body.classList.add('drag-over');
       });
-      body.addEventListener('dragleave', () => body.classList.remove('drag-over'));
 
-      body.addEventListener('drop', async e => {
+      col.addEventListener('dragleave', e => {
+        if (!col.contains(e.relatedTarget)) body.classList.remove('drag-over');
+      });
+
+      col.addEventListener('drop', async e => {
         e.preventDefault();
         body.classList.remove('drag-over');
-        if (!dragged) return;
 
-        const fromBody = dragged.parentElement;
-        if (fromBody === body) return;
+        const card = dragged;
+        const from = card?.parentElement;
+        if (!card || from === body) return;
 
-        // Move optimistically, roll back if the server rejects it
-        body.appendChild(dragged);
-        dragged.classList.toggle('board-card-done', body.dataset.status === 'completed');
-        refreshColumn(fromBody);
-        refreshColumn(body);
+        placeCard(card, from, body); // optimistic move
 
         try {
-          const res = await fetch("{{ url_for('dash.board_move') }}", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ item_id: dragged.dataset.id, status: body.dataset.status })
-          });
-          const data = await res.json();
-          if (!data.ok) throw new Error(data.error);
+          await saveMove(card.dataset.id, body.dataset.status);
         } catch (err) {
-          fromBody.appendChild(dragged);
-          dragged.classList.toggle('board-card-done', fromBody.dataset.status === 'completed');
-          refreshColumn(fromBody);
-          refreshColumn(body);
+          console.error('Move failed:', err);
+          placeCard(card, body, from); // roll back
           alert("Couldn't update status. Please try again.");
         }
       });
     });
-  </script>
+  })();
+</script>
 {% endblock %}

@@ -74,7 +74,7 @@
             <div class="tk-avatars">
               {% for a in assignees_by_item.get(item.work_item_id, []) %}
                 {% if a.picture %}
-                  <img src="{{ url_for('static', filename=a.picture) }}"
+                  <img src="{{ a.picture }}"
                       title="{{ a.full_name }}" class="tk-avatar-img">
                 {% else %}
                   <div class="tk-avatar av{{ loop.index0 % 6 }}" title="{{ a.full_name }}">

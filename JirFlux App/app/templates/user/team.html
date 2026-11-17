@@ -51,6 +51,12 @@
             <div class="team-name">{{ member.full_name or member.username }}</div>
             <div class="team-bio">{{ member.bio or member.u_title or 'No bio yet' }}</div>
           </div>
+          <form method="post"
+            action="{{ url_for('team.remove_member', member_id=member.user_id) }}"
+            onsubmit="return confirm('Remove {{ member.username }} from your team?');">
+            <!-- add your CSRF token field here if you use Flask-WTF CSRFProtect -->
+            <button type="submit" class="btn-remove">Remove</button>
+          </form>
         </div>
       {% endfor %}
     {% else %}

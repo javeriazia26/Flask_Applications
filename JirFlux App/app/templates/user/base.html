@@ -105,7 +105,7 @@
         {% block topbar_actions %}{% endblock %}
         {% if user and user.picture %}
         <img class="profile-avatar" id="avatar-preview-view"
-                src="{{ url_for('static', filename=user.picture.replace('static/', '')) }}" alt="{{ user.username }}">
+                src="{{ user.picture }}" alt="{{ user.username }}">
         {% else %}
         <div class="avatar">{{ signed_user[0] | upper if signed_user else 'U' }}</div>
         {% endif %}
@@ -114,9 +114,10 @@
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <div style="margin-bottom: 20px;">
+        <div class="app-flash-stack">
           {% for category, message in messages %}
-            <div style="padding: 10px 16px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; background: {{ '#FEE2E2' if category == 'error' else '#E7F9F1' }}; color: {{ '#B91C1C' if category == 'error' else '#065F46' }};">
+            {% set flash_class = 'app-flash-success' if category == 'success' else 'app-flash-error' if category == 'error' else 'app-flash-info' %}
+            <div class="app-flash {{ flash_class }}">
               {{ message }}
             </div>
           {% endfor %}
