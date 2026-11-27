@@ -1,0 +1,152 @@
+﻿* {
+  box-sizing: border-box;
+}
+
+:root {
+  --ink: #172033;
+  --muted: #697189;
+  --line: #e5e7ef;
+  --paper: #ffffff;
+  --page: #f4f6fa;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--ink);
+  background: var(--page);
+  font-family: "DM Sans", Arial, sans-serif;
+}
+
+.page-shell {
+  width: min(480px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 28px;
+}
+
+/* ---------- Profile ---------- */
+.profile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.avatar {
+  display: grid;
+  width: 88px;
+  height: 88px;
+  margin-bottom: 14px;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #20283a;
+  box-shadow: 0 5px 16px rgb(23 32 51 / 14%);
+  color: #fff;
+  font: 800 26px "Manrope", sans-serif;
+}
+
+.profile h1 {
+  margin: 0 0 6px;
+  font: 800 22px "Manrope", sans-serif;
+  letter-spacing: -0.4px;
+}
+
+.profile p {
+  max-width: 380px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.role {
+  margin-top: 8px;
+  color: #536078;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* ---------- Linktree-style buttons ---------- */
+.link-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.link-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 8px 52px 8px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--paper);
+  color: inherit;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgb(23 32 51 / 5%);
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+
+.link-btn:hover {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 8px 20px rgb(23 32 51 / 10%);
+}
+
+.link-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.link-thumb {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #dfe3ec;
+}
+
+.link-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  text-align: center;
+  /* balances the thumbnail so the title looks centered in the pill */
+  padding-right: 48px;
+  margin-right: -0px;
+}
+
+.link-title {
+  font: 700 16px "Manrope", sans-serif;
+  letter-spacing: -0.2px;
+}
+
+.link-sub {
+  margin-top: 1px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.arrow {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8a93a8;
+  font-size: 16px;
+}
+
+footer {
+  padding-top: 28px;
+  color: #969dac;
+  font-size: 11px;
+  text-align: center;
+}
